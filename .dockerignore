@@ -1,0 +1,41 @@
+# Build outputs
+build/
+.gradle/
+out/
+target/
+bin/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+*.swp
+*.swo
+
+# Environment and secrets
+.env
+*.log
+*.pid
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+docs/
+*.md
+HELP.md
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Docker files (to avoid recursion)
+Dockerfile*
+docker-compose*
