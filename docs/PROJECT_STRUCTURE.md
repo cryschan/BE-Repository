@@ -289,7 +289,7 @@ testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 **주요 설정**:
 - Spring 애플리케이션 이름: `be-repository`
 - PostgreSQL 데이터소스 설정
-  - 기본 DB 이름: `test-db`
+  - 기본 DB 이름: `test_db`
 - JPA/Hibernate 설정 (DDL auto: update)
 - OpenAI API 설정
   - 모델: `gpt-3.5-turbo` (기본값)
@@ -318,7 +318,7 @@ OPENAI_TEMPERATURE=0.7
 # Database Configuration
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=test-db
+DB_NAME=test_db
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
 

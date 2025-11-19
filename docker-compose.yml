@@ -28,7 +28,7 @@ services:
       # Database Configuration
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=${DB_NAME:-test-db}
+      - DB_NAME=${DB_NAME:-test_db}
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - DDL_AUTO=${DDL_AUTO:-update}
