@@ -42,3 +42,13 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// Optimize JAR generation for Docker builds
+tasks.named('bootJar') {
+    enabled = true
+    archiveFileName = "${project.name}-${project.version}.jar"
+}
+
+tasks.named('jar') {
+    enabled = false  // Prevent plain.jar generation
+}

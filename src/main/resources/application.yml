@@ -1,9 +1,11 @@
 spring:
   application:
     name: be-repository
+  config:
+    import: optional:file:.env[.properties]
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:final-postgres}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:test_db}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
@@ -17,12 +19,13 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  # AI Configuration (Spring AI + OpenAI)
   ai:
     openai:
       api-key: ${OPENAI_API_KEY}
       chat:
         options:
-          model: ${OPENAI_MODEL:gpt-4o-mini}
+          model: ${OPENAI_MODEL:gpt-3.5-turbo}
           temperature: ${OPENAI_TEMPERATURE:0.7}
 
 server:
@@ -30,19 +33,4 @@ server:
 
 logging:
   level:
-    io.github.cryschan.berepository: ${LOG_LEVEL:INFO}
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-      base-path: /actuator
-  endpoint:
-    health:
-      show-details: when-authorized
-      probes:
-        enabled: true
-  health:
-    defaults:
-      enabled: true
+    io.github.cryschan.berepository: ${LOG_LEVEL:DEBUG}
