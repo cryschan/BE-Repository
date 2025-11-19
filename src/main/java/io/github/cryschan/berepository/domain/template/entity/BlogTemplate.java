@@ -28,14 +28,12 @@ public class BlogTemplate {
     private LocalDateTime createdAt;
 
     @ElementCollection
-    @CollectionTable(name = "blog_template_categories",
-            joinColumns = @JoinColumn(name = "blog_template_id"))
+    @CollectionTable(name = "blog_template_categories", joinColumns = @JoinColumn(name = "blog_template_id"))
     @Column(name = "category")
     private List<String> categories = new ArrayList<>();
 
     @ElementCollection
-    @CollectionTable(name = "blog_template_platforms",
-            joinColumns = @JoinColumn(name = "blog_template_id"))
+    @CollectionTable(name = "blog_template_platforms", joinColumns = @JoinColumn(name = "blog_template_id"))
     @Column(name = "platform")
     private List<String> platforms = new ArrayList<>();
 
@@ -55,9 +53,7 @@ public class BlogTemplate {
     private String dailyPostTime;
 
     @Builder
-    public BlogTemplate(List<String> categories, List<String> platforms,
-                        String shopUrl, Boolean includeImages, Integer imageCount,
-                        Integer charLimit, String dailyPostTime) {
+    public BlogTemplate(List<String> categories, List<String> platforms, String shopUrl, Boolean includeImages, Integer imageCount, Integer charLimit, String dailyPostTime) {
         this.categories = categories != null ? categories : new ArrayList<>();
         this.platforms = platforms != null ? platforms : new ArrayList<>();
         this.shopUrl = shopUrl;

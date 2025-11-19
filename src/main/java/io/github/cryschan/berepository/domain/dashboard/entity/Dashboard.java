@@ -38,10 +38,7 @@ public class Dashboard {
     private String todayBlogList;
 
     @Builder
-    public Dashboard(String adminUserId, Integer activeUserCount,
-                     Integer todayBlogCount, Integer totalBlogCount,
-                     String categoryDistribution, String platformUsage,
-                     String todayBlogList) {
+    public Dashboard(String adminUserId, Integer activeUserCount, Integer todayBlogCount, Integer totalBlogCount, String categoryDistribution, String platformUsage, String todayBlogList) {
         this.adminUserId = adminUserId;
         this.activeUserCount = activeUserCount;
         this.todayBlogCount = todayBlogCount;
@@ -51,8 +48,7 @@ public class Dashboard {
         this.todayBlogList = todayBlogList;
     }
 
-    public void updateStatistics(Integer activeUserCount, Integer todayBlogCount,
-                                 Integer totalBlogCount) {
+    public void updateStatistics(Integer activeUserCount, Integer todayBlogCount, Integer totalBlogCount) {
         this.activeUserCount = activeUserCount;
         this.todayBlogCount = todayBlogCount;
         this.totalBlogCount = totalBlogCount;

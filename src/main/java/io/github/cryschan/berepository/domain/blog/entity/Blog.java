@@ -46,8 +46,7 @@ public class Blog {
     private String userId;
 
     @Builder
-    public Blog(String blogTemplateId, String title, String imgUrl,
-                String content, String userId) {
+    public Blog(String blogTemplateId, String title, String imgUrl, String content, String userId) {
         this.blogTemplateId = blogTemplateId;
         this.title = title;
         this.imgUrl = imgUrl;

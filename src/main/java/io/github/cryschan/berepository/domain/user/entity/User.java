@@ -41,8 +41,7 @@ public class User {
     private Integer tokenUsage;
 
     @Builder
-    public User(String username, String email, String passwordHash,
-                String role, Integer tokenUsage) {
+    public User(String username, String email, String passwordHash, String role, Integer tokenUsage) {
         this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;
