@@ -50,7 +50,7 @@ BE-Repository/
 │   ├── main/
 │   │   ├── java/io/github/cryschan/berepository/
 │   │   │   ├── domain/
-│   │   │   │   ├── musinsa/          ✅ 구현 완료
+│   │   │   │   ├── fashion/          ✅ 구현 완료
 │   │   │   │   │   ├── controller/
 │   │   │   │   │   │   └── MusinsaController.java
 │   │   │   │   │   ├── service/
@@ -84,6 +84,7 @@ BE-Repository/
 │   │   │   └── _global/
 │   │   │       ├── client/
 │   │   │       │   └── RestClientConfig.java  ✅ 구현 완료
+│   │   │       │   # ChatClientConfig.java 제거됨 (Spring AI auto-configuration 사용)
 │   │   │       ├── config/
 │   │   │       ├── exception/
 │   │   │       └── common/
@@ -115,9 +116,9 @@ BE-Repository/
 
 ---
 
-### 1. musinsa 도메인 ✅ **구현 완료**
+### 1. fashion 도메인 ✅ **구현 완료**
 
-**위치**: `domain/musinsa/`
+**위치**: `domain/fashion/`
 
 **책임**:
 - 무신사 패션 매거진 API 연동
@@ -288,13 +289,14 @@ testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 **주요 설정**:
 - Spring 애플리케이션 이름: `be-repository`
 - PostgreSQL 데이터소스 설정
+  - 기본 DB 이름: `test-db`
 - JPA/Hibernate 설정 (DDL auto: update)
 - OpenAI API 설정
-  - 모델: `gpt-4o-mini` (기본값)
+  - 모델: `gpt-3.5-turbo` (기본값)
   - Temperature: 0.7
 - 서버 포트: 8080
-- 로깅 레벨: INFO (기본), DEBUG (개발 시)
-- Actuator 엔드포인트: health, info, metrics
+- 로깅 레벨: DEBUG (기본값)
+- Actuator: Spring Boot 기본 설정 사용 (/actuator/health)
 
 **환경 변수 사용**:
 모든 민감 정보는 환경 변수로 관리 (`${변수명:기본값}` 형식)
@@ -316,7 +318,7 @@ OPENAI_TEMPERATURE=0.7
 # Database Configuration
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=musinsa_ai
+DB_NAME=test-db
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
 
@@ -468,9 +470,9 @@ docker-compose down
 - [ ] `ApiResponse<T>` - 표준 응답 DTO
 - [ ] `ErrorResponse` - 에러 응답 DTO
 
-### 우선순위 2: Musinsa 도메인 완성
-- [ ] `MusinsaProduct` 엔티티 설계
-- [ ] `MusinsaProductRepository` 구현
+### 우선순위 2: Fashion 도메인 완성
+- [ ] `FashionProduct` 엔티티 설계
+- [ ] `FashionProductRepository` 구현
 - [ ] 매거진 데이터 저장 기능
 - [ ] 키워드 검색 기능 확장
 
@@ -529,7 +531,7 @@ docker-compose down
 - ✅ Docker Multi-stage build 구현
 - ✅ Docker Compose 설정 (PostgreSQL + App)
 - ✅ .gitignore 보안 설정
-- ✅ Musinsa 도메인 구현
+- ✅ Fashion 도메인 구현 (musinsa 패키지에서 이동)
   - MusinsaController
   - MagazineService
   - 3개 Response DTO
@@ -578,6 +580,6 @@ https://github.com/cryschan/BE-Repository
 
 ---
 
-**마지막 업데이트**: 2025-11-18
-**문서 버전**: 2.0.0
-**프로젝트 상태**: 초기 개발 단계 (Musinsa 도메인 구현 완료)
+**마지막 업데이트**: 2025-11-19
+**문서 버전**: 2.1.0
+**프로젝트 상태**: 초기 개발 단계 (Fashion 도메인 구현 완료, 설정 최적화 완료)

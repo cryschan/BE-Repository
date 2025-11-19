@@ -15,7 +15,7 @@ bin/
 *.swp
 *.swo
 
-# Environment and secrets
+# Environment and secrets (handled by spring.config.import)
 .env
 *.log
 *.pid
@@ -24,12 +24,6 @@ bin/
 .git/
 .gitignore
 .gitattributes
-
-# Documentation
-README.md
-docs/
-*.md
-HELP.md
 
 # Temporary files
 tmp/

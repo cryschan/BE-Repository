@@ -1,8 +1,7 @@
-package io.github.cryschan.berepository.domain.musinsa.controller;
+package io.github.cryschan.berepository.domain.fashion.controller;
 
-import io.github.cryschan.berepository.domain.musinsa.dto.response.KeywordResponseDto;
-import io.github.cryschan.berepository.domain.musinsa.dto.response.MagazineResponseDto;
-import io.github.cryschan.berepository.domain.musinsa.service.MagazineService;
+import io.github.cryschan.berepository.domain.fashion.dto.response.KeywordResponseDto;
+import io.github.cryschan.berepository.domain.fashion.service.MagazineService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;

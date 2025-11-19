@@ -1,7 +1,7 @@
-package io.github.cryschan.berepository.domain.musinsa.service;
+package io.github.cryschan.berepository.domain.fashion.service;
 
-import io.github.cryschan.berepository.domain.musinsa.dto.response.KeywordResponseDto;
-import io.github.cryschan.berepository.domain.musinsa.dto.response.MagazineResponseDto;
+import io.github.cryschan.berepository.domain.fashion.dto.response.KeywordResponseDto;
+import io.github.cryschan.berepository.domain.fashion.dto.response.MagazineResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;

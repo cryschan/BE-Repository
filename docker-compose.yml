@@ -3,21 +3,19 @@ services:
     image: postgres:16-alpine
     container_name: final-postgres
     environment:
-      POSTGRES_DB: ${DB_NAME:-musinsa_ai}
+      POSTGRES_DB: ${DB_NAME:-test-db}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - final-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
+    restart: on-failure
 
   app:
     build:
@@ -28,33 +26,23 @@ services:
       - "${SERVER_PORT:-8080}:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+      # OpenAI Configuration
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-3.5-turbo}
       - OPENAI_TEMPERATURE=${OPENAI_TEMPERATURE:-0.7}
+      # Database Configuration
       - DB_HOST=postgres
-      - DB_PORT=${DB_PORT:-5432}
-      - DB_NAME=${DB_NAME:-musinsa_ai}
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-test-db}
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - DDL_AUTO=${DDL_AUTO:-update}
       - SHOW_SQL=${SHOW_SQL:-true}
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - final-network
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    restart: unless-stopped
-
-networks:
-  final-network:
-    driver: bridge
+    restart: on-failure
 
 volumes:
   postgres_data:

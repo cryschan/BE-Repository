@@ -1,4 +1,4 @@
-package io.github.cryschan.berepository.domain.musinsa.dto.response;
+package io.github.cryschan.berepository.domain.fashion.dto.response;
 
 import java.util.List;
 
