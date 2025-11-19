@@ -10,11 +10,6 @@ services:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     restart: on-failure
 
   app:
@@ -40,8 +35,7 @@ services:
       - SHOW_SQL=${SHOW_SQL:-true}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
     restart: on-failure
 
 volumes:
