@@ -53,8 +53,7 @@ cp .env.example .env
 `.env` 파일을 열어서 다음 값들을 설정하세요:
 ```env
 OPENAI_API_KEY=your-openai-api-key-here
-DB_HOST=postgres  # Docker 실행 시
-# DB_HOST=localhost  # 로컬 실행 시
+DB_HOST=localhost  # 로컬 실행 시
 ```
 
 #### 3-A. 로컬 개발 환경 (PostgreSQL만 Docker 사용)
