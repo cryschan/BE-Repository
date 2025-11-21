@@ -1,6 +1,7 @@
 package io.github.cryschan.berepository.domain.faqs.service;
 
 import io.github.cryschan.berepository.domain.faqs.dto.response.FaqsResponse;
+import io.github.cryschan.berepository.domain.faqs.entity.Faqs;
 import io.github.cryschan.berepository.domain.faqs.repository.FaqsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,7 @@ public class FaqsService {
     private final FaqsRepository faqsRepository;
 
     public List<FaqsResponse> getFaqs() {
-        return faqsRepository.findAllByOrderBySortOrderAscCreatedAtAsc()
+        return faqsRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
                 .map(FaqsResponse::from)
                 .toList();

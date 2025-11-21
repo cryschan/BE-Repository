@@ -28,6 +28,7 @@ public class Faqs {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String answer;
 
+
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder;
     //최신순 정렬로 변경
@@ -38,15 +39,15 @@ public class Faqs {
     private LocalDateTime createdAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(length = 20)
     private Statement statement; //추후 개발 (1:1 문의)
 
     @Builder
-    public Faqs(String question, String answer, Integer sortOrder) {
+    public Faqs(String question, String answer, Integer sortOrder, Statement statement) {
         this.question = question;
         this.answer = answer;
         this.sortOrder = sortOrder;
-        //this.statement = statement;
+        this.statement = statement;
     }
 
     public void updateQuestion(String question) {
