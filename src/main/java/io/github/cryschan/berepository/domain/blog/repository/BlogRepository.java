@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
-public interface BlogRepository extends JpaRepository<Blog, String> {
+public interface BlogRepository extends JpaRepository<Blog, Long> {
 
     Integer countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 

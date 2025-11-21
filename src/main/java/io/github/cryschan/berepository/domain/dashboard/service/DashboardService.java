@@ -77,14 +77,14 @@ public class DashboardService {
         Map<Long, BlogTemplate> templateMap = getTemplateMap();
 
         // 카테고리와 플랫폼별로 해당 항목을 사용하는 블로그 수 집계
-        Map<String, java.util.Set<String>> categoryToBlogIds = new HashMap<>();
-        Map<String, java.util.Set<String>> platformToBlogIds = new HashMap<>();
+        Map<String, java.util.Set<Long>> categoryToBlogIds = new HashMap<>();
+        Map<String, java.util.Set<Long>> platformToBlogIds = new HashMap<>();
         
         // 한 번의 순회로 카테고리와 플랫폼 분포를 모두 계산
         for (Blog blog : allBlogs) {
             BlogTemplate template = getTemplateFromBlog(blog, templateMap);
             if (template != null) {
-                String blogId = blog.getId();
+                Long blogId = blog.getId();
                 
                 // 템플릿의 각 카테고리에 대해 해당 블로그 ID를 추가
                 for (String category : template.getCategories()) {
