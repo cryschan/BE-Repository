@@ -31,6 +31,11 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
+# Swagger 간단 설정
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
 logging:
   level:
     io.github.cryschan.berepository: ${LOG_LEVEL:DEBUG}
