@@ -198,13 +198,37 @@ git branch -d hotfix/긴급수정
 
 ## ✅ 체크리스트
 
-### PR 생성 전
+### PR 생성 전 필수 확인 사항
 
-- [ ] 최신 develop 브랜치와 병합 완료
-- [ ] 모든 테스트 통과
-- [ ] 코드 포맷팅 확인
-- [ ] 불필요한 console.log, 주석 제거
-- [ ] 커밋 메시지 컨벤션 준수
+#### 브랜치 관리
+- [ ] **브랜치 이름 규칙 확인** (feature/, fix/, hotfix/ 등)
+- [ ] **PR 대상 브랜치 확인** (develop 브랜치가 기본 대상)
+- [ ] **최신 develop 반영 완료** (merge 또는 rebase 실행)
+  ```bash
+  git checkout develop
+  git pull origin develop
+  git checkout feature/your-branch
+  git merge develop  # 또는 git rebase develop
+  ```
+
+#### 코드 품질
+- [ ] **코드 자동 정렬 실행**
+  - IntelliJ: `⌥⌘L` (Mac) / `Ctrl+Alt+L` (Windows/Linux)
+  - 전체 프로젝트 정렬 권장
+- [ ] **불필요한 import 제거**
+  - IntelliJ: `⌃⌥O` (Mac) / `Ctrl+Alt+O` (Windows/Linux)
+- [ ] **불필요한 주석, console.log, System.out.println 제거**
+- [ ] **TODO 주석 확인 및 처리**
+
+#### 테스트 및 검증
+- [ ] **모든 테스트 통과** (`./gradlew test`)
+- [ ] **빌드 성공 확인** (`./gradlew build`)
+- [ ] **신규 기능에 대한 테스트 코드 작성**
+
+#### 커밋 및 문서
+- [ ] **커밋 메시지 컨벤션 준수** (feat:, fix:, refactor: 등)
+- [ ] **PR 템플릿 완성도 확인**
+- [ ] **관련 이슈 번호 연결** (#123 형식)
 
 ### 코드 리뷰 시
 
