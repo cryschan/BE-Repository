@@ -52,7 +52,8 @@ public class SecurityConfig {
                         // 공개 API 접근 허용
                         .requestMatchers(PUBLIC_WHITELIST).permitAll()
                         // 그 외 모든 요청은 인증 필요
-                        .anyRequest().authenticated()
+                        // TODO: 인증/인가 도입시 인증 요청 필요 [현재는 개발단계로 모든 요청 허용]
+                        .anyRequest().permitAll()
                 );
         
         return http.build();
