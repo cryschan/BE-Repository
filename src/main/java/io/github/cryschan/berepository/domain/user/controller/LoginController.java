@@ -35,7 +35,10 @@ public class LoginController {
     /**
      * 로그인
      */
-    @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인합니다")
+    @Operation(
+            summary = "로그인",
+            description = "이메일과 비밀번호로 로그인하고 JWT 토큰을 반환합니다. 반환된 토큰은 Swagger의 Authorize 버튼에 입력하여 사용합니다."
+    )
     @PostMapping("/login")
     public UserResponse login(@Valid @RequestBody LoginRequest loginRequest) {
         return userService.login(loginRequest);

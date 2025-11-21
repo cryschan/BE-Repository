@@ -1,5 +1,6 @@
 package io.github.cryschan.berepository.domain.user.service;
 
+import io.github.cryschan.berepository._global.jwt.JwtUtil;
 import io.github.cryschan.berepository.domain.user.dto.request.LoginRequest;
 import io.github.cryschan.berepository.domain.user.dto.response.UserResponse;
 import io.github.cryschan.berepository.domain.user.entity.User;
@@ -21,6 +22,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     // 회원가입
     @Transactional
@@ -41,11 +43,11 @@ public class UserService {
         // 유저 생성 (암호화된 비밀번호 전달)
         User newUser = User.form(loginRequest, encodedPassword);
 
-        // 회원 등록
-        userRepository.save(newUser);
+        // 회원 등록 (저장 후 ID가 할당된 User 반환)
+        User savedUser = userRepository.save(newUser);
 
-        // entity -> dto
-        return UserResponse.from(newUser);
+        // entity -> dto (ID가 포함된 savedUser 사용)
+        return UserResponse.from(savedUser);
     }
 
     // 로그인
@@ -61,9 +63,10 @@ public class UserService {
             throw new InvalidCredentialsException(loginRequest.email());
         }
 
-        // TODO: JWT 토큰 생성 로직 추가 필요
+        // JWT 토큰 생성
+        String accessToken = jwtUtil.generateAccessToken(user.getUserId());
 
-        // entity -> dto
-        return UserResponse.from(user);
+        // entity -> dto (토큰과 함께 반환)
+        return UserResponse.from(user, accessToken);
     }
 }
