@@ -32,13 +32,13 @@ public class BlogTemplate {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "blog_template_id", updatable = false, nullable = false)
+    @Column(updatable = false, nullable = false)
     private Long id;
 
     @Column(nullable = false, length = 100)
     private String title;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @ElementCollection(fetch = FetchType.LAZY)
@@ -46,7 +46,7 @@ public class BlogTemplate {
             name = "blog_template_categories",
             joinColumns = @JoinColumn(name = "blog_template_id")
     )
-    @Column(name = "category", nullable = false)
+    @Column(nullable = false)
     @Builder.Default
     private List<String> categories = new ArrayList<>();
 
@@ -55,23 +55,23 @@ public class BlogTemplate {
             name = "blog_template_platforms",
             joinColumns = @JoinColumn(name = "blog_template_id")
     )
-    @Column(name = "platform", nullable = false)
+    @Column(nullable = false)
     @Builder.Default
     private List<String> platforms = new ArrayList<>();
 
-    @Column(name = "shop_url", nullable = false)
+    @Column(nullable = false)
     private String shopUrl;
 
-    @Column(name = "include_images", nullable = false)
+    @Column(nullable = false)
     private boolean includeImages;
 
-    @Column(name = "image_count", nullable = false)
+    @Column(nullable = false)
     private int imageCount;
 
-    @Column(name = "char_limit", nullable = false)
+    @Column(nullable = false)
     private int charLimit;
 
-    @Column(name = "daily_post_time", nullable = false)
+    @Column(nullable = false)
     private LocalTime dailyPostTime;
 
     @PrePersist
