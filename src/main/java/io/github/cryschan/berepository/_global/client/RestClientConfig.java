@@ -1,5 +1,6 @@
 package io.github.cryschan.berepository._global.client;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
@@ -9,9 +10,19 @@ import org.springframework.web.client.RestClient;
 public class RestClientConfig {
 
     @Bean
-    public RestClient restClient() {
+    @Qualifier("musinsaContentRestClient")
+    public RestClient musinsaContentRestClient() {
         return RestClient.builder()
                 .baseUrl("https://content.musinsa.com")
+                .defaultHeader("content-Type", "application/json")
+                .build();
+    }
+
+    @Bean
+    @Qualifier("musinsaRankingRestClient")
+    public RestClient musinsaRankingRestClient() {
+        return RestClient.builder()
+                .baseUrl("https://api.musinsa.com")
                 .defaultHeader("content-Type", "application/json")
                 .build();
     }

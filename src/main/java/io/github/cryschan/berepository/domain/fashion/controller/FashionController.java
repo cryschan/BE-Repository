@@ -1,11 +1,14 @@
 package io.github.cryschan.berepository.domain.fashion.controller;
 
 import io.github.cryschan.berepository.domain.fashion.dto.response.KeywordResponseDto;
+import io.github.cryschan.berepository.domain.fashion.dto.response.MusinsaRankingLinkDto;
+import io.github.cryschan.berepository.domain.fashion.service.FashionCrawlerService;
 import io.github.cryschan.berepository.domain.fashion.service.MagazineService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,9 +18,10 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/api/keyword")
 @RestController
-public class MusinsaController {
+public class FashionController {
 
     private final MagazineService magazineService;
+    private final FashionCrawlerService fashionCrawlerService;
 
     // https://content.musinsa.com/api2/content/musinsa-content/v1/contents/scored-list?scoreType=CONTENT_POPULARITY_SCORE&contentCategoryCode=001001002&size=4
     // 무신사 매거진글을 크롤링해온다.
@@ -31,5 +35,13 @@ public class MusinsaController {
     @GetMapping("/fashion")
     public List<KeywordResponseDto> magazine() {
         return magazineService.popularAll();
+    }
+
+    @ResponseStatus(HttpStatus.OK)
+    @GetMapping("/fashion/trending")
+    public List<MusinsaRankingLinkDto> trendingKeywords(
+            @RequestParam(required = false) Integer limit
+    ) {
+        return fashionCrawlerService.fetchTrendingLinks(limit);
     }
 }

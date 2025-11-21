@@ -3,6 +3,7 @@ package io.github.cryschan.berepository.domain.fashion.service;
 import io.github.cryschan.berepository.domain.fashion.dto.response.KeywordResponseDto;
 import io.github.cryschan.berepository.domain.fashion.dto.response.MagazineResponseDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -10,11 +11,14 @@ import org.springframework.web.client.RestClient;
 import java.util.List;
 
 // 무신사 매거진의 인기 글 키워드를 가져온다.
-@RequiredArgsConstructor
 @Service
 public class MagazineService {
 
     private final RestClient restClient;
+
+    public MagazineService(@Qualifier("musinsaContentRestClient") RestClient restClient) {
+        this.restClient = restClient;
+    }
 
     // 무신사 매거진 api를 호출하고 keyword를 응답 받는다.
     public List<KeywordResponseDto> popularAll() {

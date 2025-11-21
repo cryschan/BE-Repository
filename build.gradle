@@ -36,6 +36,9 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
+    // HTML parsing
+    implementation 'org.jsoup:jsoup:1.18.3'
+
     // Swagger/OpenAPI 3.0 - 간단한 설정 (Spring Boot 3.5 호환 버전)
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
 
