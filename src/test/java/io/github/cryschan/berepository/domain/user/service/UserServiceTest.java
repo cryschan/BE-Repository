@@ -1,5 +1,6 @@
 package io.github.cryschan.berepository.domain.user.service;
 
+import io.github.cryschan.berepository._global.jwt.JwtUtil;
 import io.github.cryschan.berepository.domain.user.dto.request.LoginRequest;
 import io.github.cryschan.berepository.domain.user.dto.response.UserResponse;
 import io.github.cryschan.berepository.domain.user.entity.User;
@@ -16,6 +17,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
@@ -25,6 +27,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
+import org.mockito.Mockito;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -35,11 +39,15 @@ class UserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private JwtUtil jwtUtil;
+
     @InjectMocks
     private UserService userService;
 
     private LoginRequest loginRequest;
     private User user;
+    private User savedUser;  // DB에 저장된 후 ID가 할당된 User
     private String encodedPassword;
 
     @BeforeEach
@@ -53,7 +61,8 @@ class UserServiceTest {
         );
 
         encodedPassword = "encoded_password123";
-        
+
+        // 저장 전 User (ID 없음)
         user = User.builder()
                 .email("test@example.com")
                 .password(encodedPassword)
@@ -61,6 +70,20 @@ class UserServiceTest {
                 .department("개발팀")
                 .role(UserRole.USER)
                 .build();
+
+        // 저장 후 User (ID 있음) - Mock 객체 생성
+        savedUser = Mockito.mock(User.class, Mockito.RETURNS_SMART_NULLS);
+
+        // Mock 설정 (lenient 설정으로 필요한 경우에만 사용되도록)
+        lenient().when(savedUser.getUserId()).thenReturn(1L);
+        lenient().when(savedUser.getEmail()).thenReturn("test@example.com");
+        lenient().when(savedUser.getUsername()).thenReturn("테스트유저");
+        lenient().when(savedUser.getDepartment()).thenReturn("개발팀");
+        lenient().when(savedUser.getRole()).thenReturn(UserRole.USER);
+        lenient().when(savedUser.getPassword()).thenReturn(encodedPassword);
+        lenient().when(savedUser.getCreatedAt()).thenReturn(null);
+        lenient().when(savedUser.getUpdatedAt()).thenReturn(null);
+        lenient().when(savedUser.getTokenUsage()).thenReturn(null);
     }
 
     @Nested
@@ -73,13 +96,14 @@ class UserServiceTest {
             // given
             given(userRepository.findByEmail(anyString())).willReturn(Optional.empty());
             given(passwordEncoder.encode(anyString())).willReturn(encodedPassword);
-            given(userRepository.save(any(User.class))).willReturn(user);
+            given(userRepository.save(any(User.class))).willReturn(savedUser);  // ID가 있는 User 반환
 
             // when
             UserResponse response = userService.signup(loginRequest);
 
             // then
             assertThat(response).isNotNull();
+            assertThat(response.userId()).isEqualTo(1L);  // userId 검증 추가
             assertThat(response.email()).isEqualTo("test@example.com");
             assertThat(response.username()).isEqualTo("테스트유저");
             assertThat(response.role()).isEqualTo(UserRole.USER);
@@ -94,7 +118,7 @@ class UserServiceTest {
         @DisplayName("실패: 이미 존재하는 이메일로 회원가입 시도시 DuplicationUserException이 발생한다")
         void signup_Fail_DuplicateEmail() {
             // given
-            given(userRepository.findByEmail(anyString())).willReturn(Optional.of(user));
+            given(userRepository.findByEmail(anyString())).willReturn(Optional.of(savedUser));
 
             // when & then
             assertThatThrownBy(() -> userService.signup(loginRequest))
@@ -113,24 +137,29 @@ class UserServiceTest {
     class LoginTest {
 
         @Test
-        @DisplayName("성공: 올바른 이메일과 비밀번호로 로그인시 유저 정보가 반환된다")
-        void login_Success() {
+        @DisplayName("성공: 올바른 이메일과 비밀번호로 로그인시 JWT 토큰과 함께 유저 정보가 반환된다")
+        void login_Success_With_JWT() {
             // given
-            given(userRepository.findByEmail(anyString())).willReturn(Optional.of(user));
+            String expectedToken = "jwt.token.here";
+            given(userRepository.findByEmail(anyString())).willReturn(Optional.of(savedUser));  // ID가 있는 User 반환
             given(passwordEncoder.matches(anyString(), anyString())).willReturn(true);
+            given(jwtUtil.generateAccessToken(anyLong())).willReturn(expectedToken);
 
             // when
             UserResponse response = userService.login(loginRequest);
 
             // then
             assertThat(response).isNotNull();
+            assertThat(response.userId()).isEqualTo(1L);  // userId 검증 추가
             assertThat(response.email()).isEqualTo("test@example.com");
             assertThat(response.username()).isEqualTo("테스트유저");
             assertThat(response.role()).isEqualTo(UserRole.USER);
+            assertThat(response.token()).isEqualTo(expectedToken);  // JWT 토큰 검증
 
             // 검증
             verify(userRepository).findByEmail("test@example.com");
             verify(passwordEncoder).matches("password123", encodedPassword);
+            verify(jwtUtil).generateAccessToken(1L);  // JWT 토큰 생성 메서드 호출 확인
         }
 
         @Test
@@ -153,7 +182,7 @@ class UserServiceTest {
         @DisplayName("실패: 잘못된 비밀번호로 로그인시 InvalidCredentialsException이 발생한다")
         void login_Fail_InvalidPassword() {
             // given
-            given(userRepository.findByEmail(anyString())).willReturn(Optional.of(user));
+            given(userRepository.findByEmail(anyString())).willReturn(Optional.of(savedUser));  // ID가 있는 User 사용
             given(passwordEncoder.matches(anyString(), anyString())).willReturn(false);
 
             // when & then
@@ -176,7 +205,7 @@ class UserServiceTest {
                     "개발팀",
                     null  // null password
             );
-            given(userRepository.findByEmail(anyString())).willReturn(Optional.of(user));
+            given(userRepository.findByEmail(anyString())).willReturn(Optional.of(savedUser));
             given(passwordEncoder.matches(any(), anyString())).willReturn(false);
 
             // when & then
@@ -199,19 +228,21 @@ class UserServiceTest {
             // 1. 회원가입 시뮬레이션
             given(userRepository.findByEmail(anyString()))
                     .willReturn(Optional.empty())  // 첫 번째 호출: 회원가입시 중복 체크
-                    .willReturn(Optional.of(user)); // 두 번째 호출: 로그인시 유저 조회
+                    .willReturn(Optional.of(savedUser)); // 두 번째 호출: 로그인시 유저 조회 (ID가 있는 User)
             given(passwordEncoder.encode(anyString())).willReturn(encodedPassword);
-            given(userRepository.save(any(User.class))).willReturn(user);
+            given(userRepository.save(any(User.class))).willReturn(savedUser);  // ID가 있는 User 반환
             given(passwordEncoder.matches(anyString(), anyString())).willReturn(true);
 
             // 회원가입
             UserResponse signupResponse = userService.signup(loginRequest);
             assertThat(signupResponse).isNotNull();
+            assertThat(signupResponse.userId()).isEqualTo(1L);  // userId 검증 추가
             assertThat(signupResponse.email()).isEqualTo("test@example.com");
 
             // 로그인
             UserResponse loginResponse = userService.login(loginRequest);
             assertThat(loginResponse).isNotNull();
+            assertThat(loginResponse.userId()).isEqualTo(1L);  // userId 검증 추가
             assertThat(loginResponse.email()).isEqualTo("test@example.com");
 
             // 검증
@@ -227,13 +258,14 @@ class UserServiceTest {
             // given
             given(userRepository.findByEmail(anyString()))
                     .willReturn(Optional.empty())  // 첫 번째 회원가입: 성공
-                    .willReturn(Optional.of(user)); // 두 번째 회원가입: 중복
+                    .willReturn(Optional.of(savedUser)); // 두 번째 회원가입: 중복 (ID가 있는 User)
             given(passwordEncoder.encode(anyString())).willReturn(encodedPassword);
-            given(userRepository.save(any(User.class))).willReturn(user);
+            given(userRepository.save(any(User.class))).willReturn(savedUser);  // ID가 있는 User 반환
 
             // 첫 번째 회원가입: 성공
             UserResponse firstSignup = userService.signup(loginRequest);
             assertThat(firstSignup).isNotNull();
+            assertThat(firstSignup.userId()).isEqualTo(1L);  // userId 검증 추가
 
             // 두 번째 회원가입: 실패
             assertThatThrownBy(() -> userService.signup(loginRequest))
