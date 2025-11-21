@@ -12,31 +12,31 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: on-failure
 
-#  app:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    container_name: final-app
-#    ports:
-#      - "${SERVER_PORT:-8080}:8080"
-#    environment:
-#      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
-#      # OpenAI Configuration
-#      - OPENAI_API_KEY=${OPENAI_API_KEY}
-#      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-3.5-turbo}
-#      - OPENAI_TEMPERATURE=${OPENAI_TEMPERATURE:-0.7}
-#      # Database Configuration
-#      - DB_HOST=postgres
-#      - DB_PORT=5432
-#      - DB_NAME=${DB_NAME:-test_db}
-#      - DB_USERNAME=${DB_USERNAME:-postgres}
-#      - DB_PASSWORD=${DB_PASSWORD:-postgres}
-#      - DDL_AUTO=${DDL_AUTO:-update}
-#      - SHOW_SQL=${SHOW_SQL:-true}
-#      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
-#    depends_on:
-#      - postgres
-#    restart: on-failure
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: final-app
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
+      # OpenAI Configuration
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-3.5-turbo}
+      - OPENAI_TEMPERATURE=${OPENAI_TEMPERATURE:-0.7}
+      # Database Configuration
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-test_db}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DDL_AUTO=${DDL_AUTO:-update}
+      - SHOW_SQL=${SHOW_SQL:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+    depends_on:
+      - postgres
+    restart: on-failure
 
 volumes:
   postgres_data:
