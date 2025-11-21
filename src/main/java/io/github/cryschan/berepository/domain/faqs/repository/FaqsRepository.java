@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface FaqsRepository extends JpaRepository<Faqs, String> {
+public interface FaqsRepository extends JpaRepository<Faqs, Long> {
 
     List<Faqs> findAllByOrderBySortOrderAscCreatedAtAsc();
 }
