@@ -1,7 +1,6 @@
 package io.github.cryschan.berepository.domain.faqs.service;
 
 import io.github.cryschan.berepository.domain.faqs.dto.response.FaqsResponse;
-import io.github.cryschan.berepository.domain.faqs.entity.Faqs;
 import io.github.cryschan.berepository.domain.faqs.repository.FaqsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
