@@ -73,7 +73,7 @@ docker-compose up -d
 # 로그 확인
 docker-compose logs -f app
 
-# 종료uo
+# 종료
 docker-compose down
 ```
 
