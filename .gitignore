@@ -80,3 +80,6 @@ data/
 *.swp
 *.swo
 *~
+
+### Claude Code ###
+.claude
