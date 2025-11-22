@@ -46,12 +46,27 @@ public class SwaggerConfig {
                 .title("BE Repository API")
                 .description("""
                         BE Repository REST API 문서
-                        
+
                         ## 인증 방법
                         1. 먼저 `/api/auth/login` 으로 로그인하여 JWT 토큰을 받습니다.
                         2. 상단의 'Authorize' 버튼을 클릭합니다.
                         3. 받은 JWT 토큰을 입력합니다. (Bearer 접두사는 자동으로 추가됩니다)
                         4. 이제 인증이 필요한 API를 테스트할 수 있습니다.
+
+                        ## 테스트 계정
+                        ### 👤 일반 사용자 (USER)
+                        - 이메일: user@repository.com
+                        - 비밀번호: user123!@#
+                        - 권한: 일반 사용자 기능 (조회, 등록 등)
+
+                        ### 👑 관리자 (ADMIN)
+                        - 이메일: admin@repository.com
+                        - 비밀번호: admin123!@#
+                        - 권한: 관리자 기능 (전체 관리, 삭제 등)
+
+                        ## 사용자 역할
+                        - **USER**: 일반 사용자 권한. 기본적인 CRUD 기능을 사용할 수 있습니다.
+                        - **ADMIN**: 관리자 권한. 모든 기능에 접근 가능하며, 사용자 관리 및 시스템 설정을 수정할 수 있습니다.
                         """)
                 .version("1.0.0");
     }

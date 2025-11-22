@@ -27,7 +27,10 @@ public class User {
     private String email; // 유저 이메일 (고유해야함)
     private String password;
     private String username;
+
+    @Enumerated(EnumType.STRING)
     private UserRole role;
+
     private String department; // 부서
     private Long tokenUsage;
 
