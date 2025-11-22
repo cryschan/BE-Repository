@@ -12,7 +12,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "blogs")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
@@ -34,6 +33,9 @@ public class Blog {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Column(nullable = false)
+    private String category;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -43,14 +45,16 @@ public class Blog {
     private LocalDateTime updatedAt;
 
     @Column(name = "user_id", nullable = false)
-    private String userId;
+    private Long userId;
 
     @Builder
-    public Blog(String blogTemplateId, String title, String imgUrl, String content, String userId) {
+    public Blog(String blogTemplateId, String title, String imgUrl,
+                String content, String category, Long userId) {
         this.blogTemplateId = blogTemplateId;
         this.title = title;
         this.imgUrl = imgUrl;
         this.content = content;
+        this.category = category;
         this.userId = userId;
     }
 
@@ -70,4 +74,7 @@ public class Blog {
         this.blogTemplateId = blogTemplateId;
     }
 
+    public void updateCategory(String category) {
+        this.category = category;
+    }
 }
