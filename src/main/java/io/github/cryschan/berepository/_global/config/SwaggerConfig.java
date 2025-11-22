@@ -48,7 +48,7 @@ public class SwaggerConfig {
                         BE Repository REST API 문서
                         
                         ## 인증 방법
-                        1. 먼저 `/api/v1/users/login` 으로 로그인하여 JWT 토큰을 받습니다.
+                        1. 먼저 `/api/auth/login` 으로 로그인하여 JWT 토큰을 받습니다.
                         2. 상단의 'Authorize' 버튼을 클릭합니다.
                         3. 받은 JWT 토큰을 입력합니다. (Bearer 접두사는 자동으로 추가됩니다)
                         4. 이제 인증이 필요한 API를 테스트할 수 있습니다.

@@ -39,8 +39,8 @@ public class SecurityConfig {
      * 인증이 필요 없는 공개 API 경로
      */
     private static final String[] PUBLIC_WHITELIST = {
-            "/api/v1/auth/**",
-            "/api/v1/faqs/**"
+            "/api/auth/**",
+            "/api/faqs/**"
     };
 
     @Bean

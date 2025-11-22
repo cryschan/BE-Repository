@@ -12,7 +12,7 @@ import java.util.List;
 @Tag(name = "FAQ", description = "FAQ 조회 API")
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/v1/faqs")
+@RequestMapping("/api/faqs")
 public class FaqsController {
 
     private final FaqsService faqsService;
