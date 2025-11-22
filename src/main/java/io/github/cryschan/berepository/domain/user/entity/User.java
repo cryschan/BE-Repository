@@ -1,6 +1,6 @@
 package io.github.cryschan.berepository.domain.user.entity;
 
-import io.github.cryschan.berepository.domain.user.dto.request.LoginRequest;
+import io.github.cryschan.berepository.domain.user.dto.request.SignupRequest;
 import io.github.cryschan.berepository.domain.user.entity.role.UserRole;
 import jakarta.persistence.*;
 import lombok.Builder;
@@ -46,22 +46,22 @@ public class User {
         this.department = department;
     }
 
-    public static User form(LoginRequest loginRequest) {
+    public static User form(SignupRequest signupRequest) {
         return User.builder()
-                .email(loginRequest.email())
-                .password(loginRequest.password())
-                .username(loginRequest.username())
-                .department(loginRequest.department())
-                .role(UserRole.USER)  // 기본 역할 설정
+                .email(signupRequest.email())
+                .password(signupRequest.password())
+                .username(signupRequest.username())
+                .department(signupRequest.department())
+                .role(UserRole.USER)
                 .build();
     }
 
-    public static User form(LoginRequest loginRequest, String encodedPassword) {
+    public static User form(SignupRequest signupRequest, String encodedPassword) {
         return User.builder()
-                .email(loginRequest.email())
-                .password(encodedPassword)  // 암호화된 비밀번호 사용
-                .username(loginRequest.username())
-                .department(loginRequest.department())
+                .email(signupRequest.email())
+                .password(encodedPassword)
+                .username(signupRequest.username())
+                .department(signupRequest.department())
                 .role(UserRole.USER)
                 .build();
     }

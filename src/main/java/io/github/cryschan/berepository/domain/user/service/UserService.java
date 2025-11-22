@@ -2,6 +2,8 @@ package io.github.cryschan.berepository.domain.user.service;
 
 import io.github.cryschan.berepository._global.jwt.JwtUtil;
 import io.github.cryschan.berepository.domain.user.dto.request.LoginRequest;
+import io.github.cryschan.berepository.domain.user.dto.request.SignupRequest;
+import io.github.cryschan.berepository.domain.user.dto.response.LoginResponse;
 import io.github.cryschan.berepository.domain.user.dto.response.UserResponse;
 import io.github.cryschan.berepository.domain.user.entity.User;
 import io.github.cryschan.berepository.domain.user.exception.DuplicationUserException;
@@ -26,22 +28,18 @@ public class UserService {
 
     // 회원가입
     @Transactional
-    public UserResponse signup(LoginRequest loginRequest) {
+    public UserResponse signup(SignupRequest signupRequest) {
 
         // 중복 이메일 체크
-        // 로그인시 입력한 이메일이 데이터베이스에 등록된 이메일과 같으면 예외 발생
-        // 1. 데이터 베이스에서 loginRequest의 이메일을 조회한다.
-        // 2. 조회한 이메일이 존재하면 예외를 발생시킨다.
-
-        if (userRepository.findByEmail(loginRequest.email()).isPresent()) {
-            throw new DuplicationUserException(loginRequest.email());
+        if (userRepository.findByEmail(signupRequest.email()).isPresent()) {
+            throw new DuplicationUserException(signupRequest.email());
         }
 
         // 비밀번호 암호화
-        String encodedPassword = passwordEncoder.encode(loginRequest.password());
+        String encodedPassword = passwordEncoder.encode(signupRequest.password());
 
         // 유저 생성 (암호화된 비밀번호 전달)
-        User newUser = User.form(loginRequest, encodedPassword);
+        User newUser = User.form(signupRequest, encodedPassword);
 
         // 회원 등록 (저장 후 ID가 할당된 User 반환)
         User savedUser = userRepository.save(newUser);
@@ -52,7 +50,7 @@ public class UserService {
 
     // 로그인
     @Transactional
-    public UserResponse login(LoginRequest loginRequest) {
+    public LoginResponse login(LoginRequest loginRequest) {
 
         // 이메일로 사용자 조회
         User user = userRepository.findByEmail(loginRequest.email())
@@ -67,6 +65,6 @@ public class UserService {
         String accessToken = jwtUtil.generateAccessToken(user.getUserId());
 
         // entity -> dto (토큰과 함께 반환)
-        return UserResponse.from(user, accessToken);
+        return LoginResponse.from(user, accessToken);
     }
 }
