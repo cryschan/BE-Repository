@@ -1,5 +1,7 @@
 package io.github.cryschan.berepository.domain.user.exception;
 
+import io.github.cryschan.berepository._global.exception.base.ErrorCode;
+
 /**
  * 이미 등록된 이메일로 회원가입을 시도할 때 발생하는 예외입니다.
  * <p>
@@ -10,21 +12,21 @@ package io.github.cryschan.berepository.domain.user.exception;
  * @author cryschan
  * @since 1.0
  */
-public class DuplicationUserException extends RuntimeException {
-    
+public class DuplicationUserException extends UserException {
+
     /**
      * 중복된 이메일과 함께 예외를 생성합니다.
      *
      * @param email 중복된 이메일 주소
      */
     public DuplicationUserException(String email) {
-        super("이미 사용 중인 이메일입니다: " + email);
+        super(ErrorCode.USER_DUPLICATION, "이미 사용 중인 이메일입니다: " + email);
     }
 
     /**
      * 기본 예외 메시지와 함께 예외를 생성합니다.
      */
     public DuplicationUserException() {
-        super("이미 사용 중인 이메일입니다.");
+        super(ErrorCode.USER_DUPLICATION, "이미 사용 중인 이메일입니다.");
     }
 }

@@ -1,5 +1,7 @@
 package io.github.cryschan.berepository.domain.user.exception;
 
+import io.github.cryschan.berepository._global.exception.base.ErrorCode;
+
 /**
  * 인증되지 않은 사용자가 접근을 시도할 때 발생하는 예외입니다.
  * <p>
@@ -10,13 +12,13 @@ package io.github.cryschan.berepository.domain.user.exception;
  * @author cryschan
  * @since 1.0
  */
-public class UnauthorizedException extends RuntimeException {
+public class UnauthorizedException extends UserException {
 
     /**
      * 기본 예외 메시지와 함께 예외를 생성합니다.
      */
     public UnauthorizedException() {
-        super("인증되지 않은 사용자입니다.");
+        super(ErrorCode.UNAUTHORIZED, "인증되지 않은 사용자입니다.");
     }
 
     /**
@@ -25,7 +27,7 @@ public class UnauthorizedException extends RuntimeException {
      * @param message 예외 메시지
      */
     public UnauthorizedException(String message) {
-        super(message);
+        super(ErrorCode.UNAUTHORIZED, message);
     }
 
     /**
@@ -34,6 +36,6 @@ public class UnauthorizedException extends RuntimeException {
      * @param userId 인증 실패한 사용자 ID
      */
     public UnauthorizedException(Long userId) {
-        super("인증되지 않은 사용자입니다. ID: " + userId);
+        super(ErrorCode.UNAUTHORIZED, "인증되지 않은 사용자입니다. ID: " + userId);
     }
 }

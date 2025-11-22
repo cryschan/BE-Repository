@@ -1,5 +1,7 @@
 package io.github.cryschan.berepository.domain.user.exception;
 
+import io.github.cryschan.berepository._global.exception.base.ErrorCode;
+
 /**
  * 사용자를 찾을 수 없을 때 발생하는 예외입니다.
  * <p>
@@ -10,7 +12,7 @@ package io.github.cryschan.berepository.domain.user.exception;
  * @author cryschan
  * @since 1.0
  */
-public class UserNotFoundException extends RuntimeException {
+public class UserNotFoundException extends UserException {
 
     /**
      * 이메일 정보와 함께 예외를 생성합니다.
@@ -18,7 +20,7 @@ public class UserNotFoundException extends RuntimeException {
      * @param email 찾을 수 없는 사용자의 이메일
      */
     public UserNotFoundException(String email) {
-        super("사용자를 찾을 수 없습니다: " + email);
+        super(ErrorCode.USER_NOT_FOUND, "사용자를 찾을 수 없습니다: " + email);
     }
 
     /**
@@ -27,13 +29,13 @@ public class UserNotFoundException extends RuntimeException {
      * @param userId 찾을 수 없는 사용자의 ID
      */
     public UserNotFoundException(Long userId) {
-        super("사용자를 찾을 수 없습니다. ID: " + userId);
+        super(ErrorCode.USER_NOT_FOUND, "사용자를 찾을 수 없습니다. ID: " + userId);
     }
 
     /**
      * 기본 예외 메시지와 함께 예외를 생성합니다.
      */
     public UserNotFoundException() {
-        super("사용자를 찾을 수 없습니다.");
+        super(ErrorCode.USER_NOT_FOUND, "사용자를 찾을 수 없습니다.");
     }
 }
