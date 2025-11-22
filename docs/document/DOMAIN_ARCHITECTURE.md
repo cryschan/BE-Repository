@@ -182,16 +182,24 @@ domain/{domain-name}
 - `User`: 사용자 기본 정보
 
 **주요 기능**
-- `POST /api/v1/auth/register`: 회원가입
+- `POST /api/v1/auth/signup`: 회원가입
 - `POST /api/v1/auth/login`: 로그인 (JWT)
 - `GET /api/v1/users/me`: 내 정보 조회
 - `PUT /api/v1/users/me`: 내 정보 수정
 - `GET /api/v1/users/me/usage`: 토큰 사용량 조회
 
+**요청/응답 DTO**
+- **SignupRequest**: 회원가입 요청 (username, email, department, password)
+- **LoginRequest**: 로그인 요청 (email, password)
+- **UserResponse**: 회원가입 응답 (userId, email, username, createdAt, role)
+- **LoginResponse**: 로그인 응답 (userId, email, username, createdAt, role, token)
+
 **기술 고려사항**
 - Spring Security + JWT 기반 인증
 - BCryptPasswordEncoder로 비밀번호 암호화
 - Role 기반 권한 관리 (USER, ADMIN)
+- Bean Validation을 통한 입력 검증 (@NotBlank, @Email, @Size)
+- Swagger 문서화 (requiredMode 명시)
 
 **나중에 추가되어야할 사용자 기능**
 - 사용자는 자신이 작성한 글을 볼 수 있어야한다.
