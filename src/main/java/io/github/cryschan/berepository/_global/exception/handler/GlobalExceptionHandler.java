@@ -1,15 +1,15 @@
 package io.github.cryschan.berepository._global.exception.handler;
 
+import io.github.cryschan.berepository._global.exception.base.BaseException;
 import io.github.cryschan.berepository._global.exception.dto.ErrorResponse;
-import io.github.cryschan.berepository.domain.user.exception.DuplicationUserException;
-import io.github.cryschan.berepository.domain.user.exception.InvalidCredentialsException;
-import io.github.cryschan.berepository.domain.user.exception.UserNotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.List;
@@ -25,48 +25,32 @@ import java.util.List;
  * @since 1.0
  */
 @Slf4j
+@Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    // 1. 사용자를 찾을 수 없음
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    @ExceptionHandler(UserNotFoundException.class)
-    public ErrorResponse handleUserNotFoundException(UserNotFoundException e) {
-        log.error("UserNotFoundException: {}", e.getMessage());
-        return ErrorResponse.of(
-                e.getMessage(),
-                HttpStatus.NOT_FOUND.value(),
-                "USER_NOT_FOUND"
-        );
+
+    /**
+     * BaseException 및 그 하위 예외들을 일괄 처리합니다.
+     * 모든 비즈니스 예외는 이 핸들러를 통해 처리됩니다.
+     */
+    @ExceptionHandler(BaseException.class)
+    public ResponseEntity<ErrorResponse> handleBaseException(BaseException e) {
+        log.error("{}[{}]: {}", e.getClass().getSimpleName(), e.getCode(), e.getMessage());
+
+        return ResponseEntity
+                .status(e.getHttpStatus())
+                .body(ErrorResponse.of(
+                        e.getMessage(),
+                        e.getHttpStatusCode(),
+                        e.getCode()
+                ));
     }
 
-    // 2. 이메일 중복
-    @ResponseStatus(HttpStatus.CONFLICT)
-    @ExceptionHandler(DuplicationUserException.class)
-    public ErrorResponse handleDuplicationUserException(DuplicationUserException e) {
-        log.error("DuplicationUserException: {}", e.getMessage());
-        return ErrorResponse.of(
-                e.getMessage(),
-                HttpStatus.CONFLICT.value(),
-                "DUPLICATE_EMAIL"
-        );
-    }
-
-    // 3. 로그인 실패 (이메일/비밀번호 오류)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ErrorResponse handleInvalidCredentialsException(InvalidCredentialsException e) {
-        log.error("InvalidCredentialsException: {}", e.getMessage());
-        return ErrorResponse.of(
-                e.getMessage(),
-                HttpStatus.UNAUTHORIZED.value(),
-                "INVALID_CREDENTIALS"
-        );
-    }
-
-    // 4. 입력 검증 실패 (@Valid)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    /**
+     * 입력 검증 실패 (@Valid)
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ErrorResponse handleValidationException(MethodArgumentNotValidException e) {
+    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException e) {
         log.error("MethodArgumentNotValidException: {}", e.getMessage());
 
         BindingResult bindingResult = e.getBindingResult();
@@ -79,23 +63,30 @@ public class GlobalExceptionHandler {
                 ))
                 .toList();
 
-        return ErrorResponse.of(
-                "입력값 검증에 실패했습니다.",
-                HttpStatus.BAD_REQUEST.value(),
-                "VALIDATION_FAILED",
-                fieldErrors
-        );
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of(
+                        "입력값 검증에 실패했습니다.",
+                        HttpStatus.BAD_REQUEST.value(),
+                        "C001",
+                        fieldErrors
+                ));
     }
 
-    // 5. 일반적인 예외 (fallback)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    /**
+     * 일반적인 예외 (fallback)
+     * 예상하지 못한 예외 발생 시 처리
+     */
     @ExceptionHandler(Exception.class)
-    public ErrorResponse handleException(Exception e) {
-        log.error("Exception: {}", e.getMessage(), e);
-        return ErrorResponse.of(
-                "서버 내부 오류가 발생했습니다.",
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "INTERNAL_SERVER_ERROR"
-        );
+    public ResponseEntity<ErrorResponse> handleException(Exception e) {
+        log.error("Unexpected Exception: {}", e.getMessage(), e);
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ErrorResponse.of(
+                        "서버 내부 오류가 발생했습니다.",
+                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        "C999"
+                ));
     }
 }

@@ -182,11 +182,11 @@ domain/{domain-name}
 - `User`: 사용자 기본 정보
 
 **주요 기능**
-- `POST /api/v1/auth/signup`: 회원가입
-- `POST /api/v1/auth/login`: 로그인 (JWT)
-- `GET /api/v1/users/me`: 내 정보 조회
-- `PUT /api/v1/users/me`: 내 정보 수정
-- `GET /api/v1/users/me/usage`: 토큰 사용량 조회
+- `POST /api/auth/signup`: 회원가입
+- `POST /api/auth/login`: 로그인 (JWT)
+- `GET /api/users/me`: 내 정보 조회
+- `PUT /api/users/me`: 내 정보 수정
+- `GET /api/users/me/usage`: 토큰 사용량 조회
 
 **요청/응답 DTO**
 - **SignupRequest**: 회원가입 요청 (username, email, department, password)
@@ -220,13 +220,13 @@ domain/{domain-name}
 - `Keyword`: 블로그 키워드
 
 **주요 기능**
-- `POST /api/v1/blog-templates`: 템플릿 생성/수정
-- `GET /api/v1/blog-templates/me`: 내 템플릿 조회
-- `POST /api/v1/blogs/generate`: AI 블로그 생성 (AI 연동)
-- `GET /api/v1/blogs`: 블로그 목록 조회 (페이징)
-- `GET /api/v1/blogs/{id}`: 블로그 상세 조회
-- `PUT /api/v1/blogs/{id}`: 블로그 수정
-- `DELETE /api/v1/blogs/{id}`: 블로그 삭제
+- `POST /api/blog-templates`: 템플릿 생성/수정
+- `GET /api/blog-templates/me`: 내 템플릿 조회
+- `POST /api/blogs/generate`: AI 블로그 생성 (AI 연동)
+- `GET /api/blogs`: 블로그 목록 조회 (페이징)
+- `GET /api/blogs/{id}`: 블로그 상세 조회
+- `PUT /api/blogs/{id}`: 블로그 수정
+- `DELETE /api/blogs/{id}`: 블로그 삭제
 
 **BlogTemplate 설정 항목**
 ```java
@@ -269,11 +269,11 @@ public class BlogTemplate {
 - `FAQ`: 자주 묻는 질문
 
 **주요 기능**
-- `GET /api/v1/admin/dashboard`: 대시보드 데이터 조회
-- `GET /api/v1/faqs`: FAQ 목록 조회 (공개)
-- `POST /api/v1/admin/faqs`: FAQ 생성 (관리자)
-- `PUT /api/v1/admin/faqs/{id}`: FAQ 수정 (관리자)
-- `DELETE /api/v1/admin/faqs/{id}`: FAQ 삭제 (관리자)
+- `GET /api/admin/dashboard`: 대시보드 데이터 조회
+- `GET /api/faqs`: FAQ 목록 조회 (공개)
+- `POST /api/admin/faqs`: FAQ 생성 (관리자)
+- `PUT /api/admin/faqs/{id}`: FAQ 수정 (관리자)
+- `DELETE /api/admin/faqs/{id}`: FAQ 삭제 (관리자)
 
 **대시보드 집계 항목**
 - 활성 사용자 수 (active_user_count)
@@ -304,8 +304,8 @@ public class BlogTemplate {
 - `TrendEmail`: 트렌드 요약 이메일
 
 **주요 기능**
-- `POST /api/v1/notifications/subscribe`: 알림 구독 설정
-- `GET /api/v1/notifications`: 알림 이력 조회
+- `POST /api/notifications/subscribe`: 알림 구독 설정
+- `GET /api/notifications`: 알림 이력 조회
 - 스케줄러: 매일 설정 시간에 블로그 생성 + 이메일 발송
 - 스케줄러: 주간/월간 트렌드 요약 이메일
 
@@ -326,8 +326,8 @@ public class BlogTemplate {
 - `Category`: 카테고리 마스터 데이터
 
 **주요 기능**
-- `GET /api/v1/categories`: 카테고리 목록 조회
-- `POST /api/v1/admin/categories`: 카테고리 생성 (관리자)
+- `GET /api/categories`: 카테고리 목록 조회
+- `POST /api/admin/categories`: 카테고리 생성 (관리자)
 - BlogTemplate에 Category FK 추가
 
 **카테고리 확장 예시**
@@ -348,7 +348,7 @@ public class BlogTemplate {
 - `PopularKeyword`: 인기 키워드 통계
 
 **주요 기능**
-- `GET /api/v1/analytics/keywords/popular`: 인기 키워드 조회
+- `GET /api/analytics/keywords/popular`: 인기 키워드 조회
 - 스케줄러: 주기적으로 키워드 집계
 
 ---
@@ -363,10 +363,10 @@ public class BlogTemplate {
 - `Inquiry`: 문의
 
 **주요 기능**
-- `POST /api/v1/inquiries`: 문의 생성 (사용자)
-- `GET /api/v1/inquiries/me`: 내 문의 목록 조회
-- `GET /api/v1/admin/inquiries`: 전체 문의 조회 (관리자)
-- `PUT /api/v1/admin/inquiries/{id}/answer`: 답변 작성 (관리자)
+- `POST /api/inquiries`: 문의 생성 (사용자)
+- `GET /api/inquiries/me`: 내 문의 목록 조회
+- `GET /api/admin/inquiries`: 전체 문의 조회 (관리자)
+- `PUT /api/admin/inquiries/{id}/answer`: 답변 작성 (관리자)
 
 ---
 
@@ -379,11 +379,11 @@ public class BlogTemplate {
 - `Notice`: 공지사항
 
 **주요 기능**
-- `GET /api/v1/notices`: 공지사항 목록 조회 (페이징)
-- `GET /api/v1/notices/{id}`: 공지사항 상세 조회
-- `POST /api/v1/admin/notices`: 공지사항 작성 (관리자)
-- `PUT /api/v1/admin/notices/{id}`: 공지사항 수정 (관리자)
-- `DELETE /api/v1/admin/notices/{id}`: 공지사항 삭제 (관리자)
+- `GET /api/notices`: 공지사항 목록 조회 (페이징)
+- `GET /api/notices/{id}`: 공지사항 상세 조회
+- `POST /api/admin/notices`: 공지사항 작성 (관리자)
+- `PUT /api/admin/notices/{id}`: 공지사항 수정 (관리자)
+- `DELETE /api/admin/notices/{id}`: 공지사항 삭제 (관리자)
 
 ---
 
@@ -435,8 +435,8 @@ public class BlogTemplate {
 
 **인증/인가**
 - Spring Security + JWT
-- `/api/v1/auth/**`: 인증 불필요
-- `/api/v1/admin/**`: ADMIN 권한 필요
+- `/api/auth/**`: 인증 불필요
+- `/api/admin/**`: ADMIN 권한 필요
 - 나머지 API: USER 권한 필요
 
 **JWT 구성**
@@ -735,43 +735,43 @@ services:
 #### 인증 (Auth)
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| POST | /api/v1/auth/register | 회원가입 | Public |
-| POST | /api/v1/auth/login | 로그인 | Public |
+| POST | /api/auth/register | 회원가입 | Public |
+| POST | /api/auth/login | 로그인 | Public |
 
 #### 사용자 (User)
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| GET | /api/v1/users/me | 내 정보 조회 | USER |
-| PUT | /api/v1/users/me | 내 정보 수정 | USER |
-| GET | /api/v1/users/me/usage | 토큰 사용량 조회 | USER |
+| GET | /api/users/me | 내 정보 조회 | USER |
+| PUT | /api/users/me | 내 정보 수정 | USER |
+| GET | /api/users/me/usage | 토큰 사용량 조회 | USER |
 
 #### 블로그 템플릿 (Blog Template)
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| POST | /api/v1/blog-templates | 템플릿 생성/수정 | USER |
-| GET | /api/v1/blog-templates/me | 내 템플릿 조회 | USER |
+| POST | /api/blog-templates | 템플릿 생성/수정 | USER |
+| GET | /api/blog-templates/me | 내 템플릿 조회 | USER |
 
 #### 블로그 (Blog)
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| POST | /api/v1/blogs/generate | AI 블로그 생성 | USER |
-| GET | /api/v1/blogs | 블로그 목록 조회 | USER |
-| GET | /api/v1/blogs/{id} | 블로그 상세 조회 | USER |
-| PUT | /api/v1/blogs/{id} | 블로그 수정 | USER |
-| DELETE | /api/v1/blogs/{id} | 블로그 삭제 | USER |
+| POST | /api/blogs/generate | AI 블로그 생성 | USER |
+| GET | /api/blogs | 블로그 목록 조회 | USER |
+| GET | /api/blogs/{id} | 블로그 상세 조회 | USER |
+| PUT | /api/blogs/{id} | 블로그 수정 | USER |
+| DELETE | /api/blogs/{id} | 블로그 삭제 | USER |
 
 #### FAQ
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| GET | /api/v1/faqs | FAQ 목록 조회 | Public |
-| POST | /api/v1/admin/faqs | FAQ 생성 | ADMIN |
-| PUT | /api/v1/admin/faqs/{id} | FAQ 수정 | ADMIN |
-| DELETE | /api/v1/admin/faqs/{id} | FAQ 삭제 | ADMIN |
+| GET | /api/faqs | FAQ 목록 조회 | Public |
+| POST | /api/admin/faqs | FAQ 생성 | ADMIN |
+| PUT | /api/admin/faqs/{id} | FAQ 수정 | ADMIN |
+| DELETE | /api/admin/faqs/{id} | FAQ 삭제 | ADMIN |
 
 #### 관리자 (Admin)
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| GET | /api/v1/admin/dashboard | 대시보드 조회 | ADMIN |
+| GET | /api/admin/dashboard | 대시보드 조회 | ADMIN |
 
 ---
 
@@ -780,36 +780,36 @@ services:
 #### 알림 (Notification)
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| POST | /api/v1/notifications/subscribe | 알림 구독 설정 | USER |
-| GET | /api/v1/notifications | 알림 이력 조회 | USER |
+| POST | /api/notifications/subscribe | 알림 구독 설정 | USER |
+| GET | /api/notifications | 알림 이력 조회 | USER |
 
 #### 카테고리 (Category)
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| GET | /api/v1/categories | 카테고리 목록 조회 | Public |
-| POST | /api/v1/admin/categories | 카테고리 생성 | ADMIN |
+| GET | /api/categories | 카테고리 목록 조회 | Public |
+| POST | /api/admin/categories | 카테고리 생성 | ADMIN |
 
 #### 분석 (Analytics)
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| GET | /api/v1/analytics/keywords/popular | 인기 키워드 조회 | Public |
+| GET | /api/analytics/keywords/popular | 인기 키워드 조회 | Public |
 
 #### 문의 (Inquiry)
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| POST | /api/v1/inquiries | 문의 생성 | USER |
-| GET | /api/v1/inquiries/me | 내 문의 목록 | USER |
-| GET | /api/v1/admin/inquiries | 전체 문의 조회 | ADMIN |
-| PUT | /api/v1/admin/inquiries/{id}/answer | 문의 답변 | ADMIN |
+| POST | /api/inquiries | 문의 생성 | USER |
+| GET | /api/inquiries/me | 내 문의 목록 | USER |
+| GET | /api/admin/inquiries | 전체 문의 조회 | ADMIN |
+| PUT | /api/admin/inquiries/{id}/answer | 문의 답변 | ADMIN |
 
 #### 공지사항 (Notice)
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| GET | /api/v1/notices | 공지사항 목록 | Public |
-| GET | /api/v1/notices/{id} | 공지사항 상세 | Public |
-| POST | /api/v1/admin/notices | 공지사항 작성 | ADMIN |
-| PUT | /api/v1/admin/notices/{id} | 공지사항 수정 | ADMIN |
-| DELETE | /api/v1/admin/notices/{id} | 공지사항 삭제 | ADMIN |
+| GET | /api/notices | 공지사항 목록 | Public |
+| GET | /api/notices/{id} | 공지사항 상세 | Public |
+| POST | /api/admin/notices | 공지사항 작성 | ADMIN |
+| PUT | /api/admin/notices/{id} | 공지사항 수정 | ADMIN |
+| DELETE | /api/admin/notices/{id} | 공지사항 삭제 | ADMIN |
 
 ---
 
