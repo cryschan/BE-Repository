@@ -56,12 +56,12 @@ public class SwaggerConfig {
                         ## 테스트 계정
                         ### 👤 일반 사용자 (USER)
                         - 이메일: user@repository.com
-                        - 비밀번호: user123!@#
+                        - 비밀번호: 1234qwer
                         - 권한: 일반 사용자 기능 (조회, 등록 등)
 
                         ### 👑 관리자 (ADMIN)
                         - 이메일: admin@repository.com
-                        - 비밀번호: admin123!@#
+                        - 비밀번호: 1234qwer
                         - 권한: 관리자 기능 (전체 관리, 삭제 등)
 
                         ## 사용자 역할

@@ -49,11 +49,11 @@ jwt:
 init:
   admin:
     email: ${INIT_ADMIN_EMAIL:admin@repository.com}
-    password: ${INIT_ADMIN_PASSWORD:admin123!@#}
+    password: ${INIT_ADMIN_PASSWORD:1234qwer}
     username: ${INIT_ADMIN_USERNAME:System Admin}
     department: ${INIT_ADMIN_DEPARTMENT:Management}
   user:
     email: ${INIT_USER_EMAIL:user@repository.com}
-    password: ${INIT_USER_PASSWORD:user123!@#}
+    password: ${INIT_USER_PASSWORD:1234qwer}
     username: ${INIT_USER_USERNAME:Test User}
     department: ${INIT_USER_DEPARTMENT:Development}
