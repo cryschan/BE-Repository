@@ -1,6 +1,9 @@
 package io.github.cryschan.berepository.domain.user.service;
 
+import io.github.cryschan.berepository._global.jwt.JwtUtil;
 import io.github.cryschan.berepository.domain.user.dto.request.LoginRequest;
+import io.github.cryschan.berepository.domain.user.dto.request.SignupRequest;
+import io.github.cryschan.berepository.domain.user.dto.response.LoginResponse;
 import io.github.cryschan.berepository.domain.user.dto.response.UserResponse;
 import io.github.cryschan.berepository.domain.user.entity.User;
 import io.github.cryschan.berepository.domain.user.entity.role.UserRole;
@@ -16,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
@@ -25,6 +29,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
+import org.mockito.Mockito;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -35,25 +41,37 @@ class UserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private JwtUtil jwtUtil;
+
     @InjectMocks
     private UserService userService;
 
+    private SignupRequest signupRequest;
     private LoginRequest loginRequest;
     private User user;
+    private User savedUser;
     private String encodedPassword;
 
     @BeforeEach
     void setUp() {
-        // 테스트 데이터 준비
+        // 회원가입 테스트 데이터
+        signupRequest = new SignupRequest(
+                "테스트유저",
+                "test@example.com",
+                "개발팀",
+                "password123"
+        );
+
+        // 로그인 테스트 데이터
         loginRequest = new LoginRequest(
-                "테스트유저",        // username
-                "test@example.com",  // email
-                "개발팀",           // department
-                "password123"        // password
+                "test@example.com",
+                "password123"
         );
 
         encodedPassword = "encoded_password123";
-        
+
+        // 저장 전 User (ID 없음)
         user = User.builder()
                 .email("test@example.com")
                 .password(encodedPassword)
@@ -61,6 +79,20 @@ class UserServiceTest {
                 .department("개발팀")
                 .role(UserRole.USER)
                 .build();
+
+        // 저장 후 User (ID 있음) - Mock 객체 생성
+        savedUser = Mockito.mock(User.class, Mockito.RETURNS_SMART_NULLS);
+
+        // Mock 설정 (lenient 설정으로 필요한 경우에만 사용되도록)
+        lenient().when(savedUser.getUserId()).thenReturn(1L);
+        lenient().when(savedUser.getEmail()).thenReturn("test@example.com");
+        lenient().when(savedUser.getUsername()).thenReturn("테스트유저");
+        lenient().when(savedUser.getDepartment()).thenReturn("개발팀");
+        lenient().when(savedUser.getRole()).thenReturn(UserRole.USER);
+        lenient().when(savedUser.getPassword()).thenReturn(encodedPassword);
+        lenient().when(savedUser.getCreatedAt()).thenReturn(null);
+        lenient().when(savedUser.getUpdatedAt()).thenReturn(null);
+        lenient().when(savedUser.getTokenUsage()).thenReturn(null);
     }
 
     @Nested
@@ -73,13 +105,14 @@ class UserServiceTest {
             // given
             given(userRepository.findByEmail(anyString())).willReturn(Optional.empty());
             given(passwordEncoder.encode(anyString())).willReturn(encodedPassword);
-            given(userRepository.save(any(User.class))).willReturn(user);
+            given(userRepository.save(any(User.class))).willReturn(savedUser);
 
             // when
-            UserResponse response = userService.signup(loginRequest);
+            UserResponse response = userService.signup(signupRequest);
 
             // then
             assertThat(response).isNotNull();
+            assertThat(response.userId()).isEqualTo(1L);
             assertThat(response.email()).isEqualTo("test@example.com");
             assertThat(response.username()).isEqualTo("테스트유저");
             assertThat(response.role()).isEqualTo(UserRole.USER);
@@ -94,10 +127,10 @@ class UserServiceTest {
         @DisplayName("실패: 이미 존재하는 이메일로 회원가입 시도시 DuplicationUserException이 발생한다")
         void signup_Fail_DuplicateEmail() {
             // given
-            given(userRepository.findByEmail(anyString())).willReturn(Optional.of(user));
+            given(userRepository.findByEmail(anyString())).willReturn(Optional.of(savedUser));
 
             // when & then
-            assertThatThrownBy(() -> userService.signup(loginRequest))
+            assertThatThrownBy(() -> userService.signup(signupRequest))
                     .isInstanceOf(DuplicationUserException.class)
                     .hasMessageContaining("test@example.com");
 
@@ -113,24 +146,29 @@ class UserServiceTest {
     class LoginTest {
 
         @Test
-        @DisplayName("성공: 올바른 이메일과 비밀번호로 로그인시 유저 정보가 반환된다")
-        void login_Success() {
+        @DisplayName("성공: 올바른 이메일과 비밀번호로 로그인시 JWT 토큰과 함께 유저 정보가 반환된다")
+        void login_Success_With_JWT() {
             // given
-            given(userRepository.findByEmail(anyString())).willReturn(Optional.of(user));
+            String expectedToken = "jwt.token.here";
+            given(userRepository.findByEmail(anyString())).willReturn(Optional.of(savedUser));
             given(passwordEncoder.matches(anyString(), anyString())).willReturn(true);
+            given(jwtUtil.generateAccessToken(anyLong())).willReturn(expectedToken);
 
             // when
-            UserResponse response = userService.login(loginRequest);
+            LoginResponse response = userService.login(loginRequest);
 
             // then
             assertThat(response).isNotNull();
+            assertThat(response.userId()).isEqualTo(1L);
             assertThat(response.email()).isEqualTo("test@example.com");
             assertThat(response.username()).isEqualTo("테스트유저");
             assertThat(response.role()).isEqualTo(UserRole.USER);
+            assertThat(response.token()).isEqualTo(expectedToken);
 
             // 검증
             verify(userRepository).findByEmail("test@example.com");
             verify(passwordEncoder).matches("password123", encodedPassword);
+            verify(jwtUtil).generateAccessToken(1L);
         }
 
         @Test
@@ -153,7 +191,7 @@ class UserServiceTest {
         @DisplayName("실패: 잘못된 비밀번호로 로그인시 InvalidCredentialsException이 발생한다")
         void login_Fail_InvalidPassword() {
             // given
-            given(userRepository.findByEmail(anyString())).willReturn(Optional.of(user));
+            given(userRepository.findByEmail(anyString())).willReturn(Optional.of(savedUser));  // ID가 있는 User 사용
             given(passwordEncoder.matches(anyString(), anyString())).willReturn(false);
 
             // when & then
@@ -171,12 +209,10 @@ class UserServiceTest {
         void login_EdgeCase_NullPassword() {
             // given
             LoginRequest invalidRequest = new LoginRequest(
-                    "테스트유저",
                     "test@example.com",
-                    "개발팀",
-                    null  // null password
+                    null
             );
-            given(userRepository.findByEmail(anyString())).willReturn(Optional.of(user));
+            given(userRepository.findByEmail(anyString())).willReturn(Optional.of(savedUser));
             given(passwordEncoder.matches(any(), anyString())).willReturn(false);
 
             // when & then
@@ -198,20 +234,22 @@ class UserServiceTest {
         void signupAndLogin_Scenario() {
             // 1. 회원가입 시뮬레이션
             given(userRepository.findByEmail(anyString()))
-                    .willReturn(Optional.empty())  // 첫 번째 호출: 회원가입시 중복 체크
-                    .willReturn(Optional.of(user)); // 두 번째 호출: 로그인시 유저 조회
+                    .willReturn(Optional.empty())
+                    .willReturn(Optional.of(savedUser));
             given(passwordEncoder.encode(anyString())).willReturn(encodedPassword);
-            given(userRepository.save(any(User.class))).willReturn(user);
+            given(userRepository.save(any(User.class))).willReturn(savedUser);
             given(passwordEncoder.matches(anyString(), anyString())).willReturn(true);
 
             // 회원가입
-            UserResponse signupResponse = userService.signup(loginRequest);
+            UserResponse signupResponse = userService.signup(signupRequest);
             assertThat(signupResponse).isNotNull();
+            assertThat(signupResponse.userId()).isEqualTo(1L);
             assertThat(signupResponse.email()).isEqualTo("test@example.com");
 
             // 로그인
-            UserResponse loginResponse = userService.login(loginRequest);
+            LoginResponse loginResponse = userService.login(loginRequest);
             assertThat(loginResponse).isNotNull();
+            assertThat(loginResponse.userId()).isEqualTo(1L);
             assertThat(loginResponse.email()).isEqualTo("test@example.com");
 
             // 검증
@@ -226,17 +264,18 @@ class UserServiceTest {
         void preventDuplicateSignup_Scenario() {
             // given
             given(userRepository.findByEmail(anyString()))
-                    .willReturn(Optional.empty())  // 첫 번째 회원가입: 성공
-                    .willReturn(Optional.of(user)); // 두 번째 회원가입: 중복
+                    .willReturn(Optional.empty())
+                    .willReturn(Optional.of(savedUser));
             given(passwordEncoder.encode(anyString())).willReturn(encodedPassword);
-            given(userRepository.save(any(User.class))).willReturn(user);
+            given(userRepository.save(any(User.class))).willReturn(savedUser);
 
             // 첫 번째 회원가입: 성공
-            UserResponse firstSignup = userService.signup(loginRequest);
+            UserResponse firstSignup = userService.signup(signupRequest);
             assertThat(firstSignup).isNotNull();
+            assertThat(firstSignup.userId()).isEqualTo(1L);
 
             // 두 번째 회원가입: 실패
-            assertThatThrownBy(() -> userService.signup(loginRequest))
+            assertThatThrownBy(() -> userService.signup(signupRequest))
                     .isInstanceOf(DuplicationUserException.class);
 
             // 검증

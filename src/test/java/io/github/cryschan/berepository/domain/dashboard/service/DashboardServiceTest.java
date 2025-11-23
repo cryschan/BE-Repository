@@ -1,0 +1,276 @@
+package io.github.cryschan.berepository.domain.dashboard.service;
+
+import io.github.cryschan.berepository.domain.blog.entity.Blog;
+import io.github.cryschan.berepository.domain.blog.repository.BlogRepository;
+import io.github.cryschan.berepository.domain.blogtemplate.entity.BlogTemplate;
+import io.github.cryschan.berepository.domain.blogtemplate.repository.BlogTemplateRepository;
+import io.github.cryschan.berepository.domain.dashboard.dto.DashboardResponse;
+import io.github.cryschan.berepository.domain.user.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import static io.github.cryschan.berepository.domain.user.entity.role.UserRole.USER;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("DashboardService 테스트")
+class DashboardServiceTest {
+
+    @Mock
+    private BlogRepository blogRepository;
+
+    @Mock
+    private BlogTemplateRepository blogTemplateRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @InjectMocks
+    private DashboardService dashboardService;
+
+    private BlogTemplate template1;
+    private BlogTemplate template2;
+    private Blog blog1;
+    private Blog blog2;
+    private Blog blog3;
+    private Blog todayBlog;
+
+    @BeforeEach
+    void setUp() {
+        // 템플릿 데이터 준비
+        template1 = BlogTemplate.builder()
+                .id(1L)
+                .title("패션 템플릿")
+                .categories(List.of("패션", "의류"))
+                .platforms(List.of("네이버", "카카오"))
+                .shopUrl("https://shop1.com")
+                .includeImages(true)
+                .imageCount(3)
+                .charLimit(1000)
+                .dailyPostTime(LocalTime.of(10, 0))
+                .build();
+
+        template2 = BlogTemplate.builder()
+                .id(2L)
+                .title("뷰티 템플릿")
+                .categories(List.of("뷰티", "화장품"))
+                .platforms(List.of("네이버", "인스타그램"))
+                .shopUrl("https://shop2.com")
+                .includeImages(true)
+                .imageCount(5)
+                .charLimit(2000)
+                .dailyPostTime(LocalTime.of(14, 0))
+                .build();
+
+        // 블로그 데이터 준비
+        blog1 = Blog.builder()
+                .blogTemplateId("1")
+                .title("패션 블로그 1")
+                .content("내용 1")
+                .userId("user1")
+                .build();
+
+        blog2 = Blog.builder()
+                .blogTemplateId("1")
+                .title("패션 블로그 2")
+                .content("내용 2")
+                .userId("user2")
+                .build();
+
+        blog3 = Blog.builder()
+                .blogTemplateId("2")
+                .title("뷰티 블로그 1")
+                .content("내용 3")
+                .userId("user3")
+                .build();
+
+        // 오늘 작성된 블로그
+        todayBlog = Blog.builder()
+                .blogTemplateId("1")
+                .title("오늘의 블로그")
+                .content("오늘 작성된 내용")
+                .userId("user1")
+                .build();
+    }
+
+    @Nested
+    @DisplayName("대시보드 데이터 조회 테스트")
+    class GetDashboardDataTest {
+
+        @Test
+        @DisplayName("성공: 모든 대시보드 데이터가 정상적으로 조회된다")
+        void getDashboardData_Success() {
+            // given
+            List<Blog> allBlogs = List.of(blog1, blog2, blog3);
+            List<BlogTemplate> allTemplates = List.of(template1, template2);
+            List<Blog> todayBlogs = List.of(todayBlog);
+
+            given(blogRepository.countByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
+                    .willReturn(1);
+            given(blogRepository.count()).willReturn(3L);
+            given(userRepository.countByRole(USER)).willReturn(10);
+            given(blogRepository.findAll()).willReturn(allBlogs);
+            given(blogTemplateRepository.findAll()).willReturn(allTemplates);
+            given(blogRepository.findAllByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
+                    .willReturn(todayBlogs);
+
+            // when
+            DashboardResponse response = dashboardService.getDashboardData();
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.getActiveUserCount()).isEqualTo(10);
+            assertThat(response.getTodayBlogCount()).isEqualTo(1);
+            assertThat(response.getTotalBlogCount()).isEqualTo(3);
+
+            // 카테고리 분포 검증
+            assertThat(response.getCategoryDistribution()).isNotNull();
+            assertThat(response.getCategoryDistribution().get("패션")).isEqualTo(2L); // blog1, blog2
+            assertThat(response.getCategoryDistribution().get("의류")).isEqualTo(2L); // blog1, blog2
+            assertThat(response.getCategoryDistribution().get("뷰티")).isEqualTo(1L); // blog3
+            assertThat(response.getCategoryDistribution().get("화장품")).isEqualTo(1L); // blog3
+
+            // 플랫폼 분포 검증
+            assertThat(response.getPlatformUsage()).isNotNull();
+            assertThat(response.getPlatformUsage().get("네이버")).isEqualTo(3L); // blog1, blog2, blog3
+            assertThat(response.getPlatformUsage().get("카카오")).isEqualTo(2L); // blog1, blog2
+            assertThat(response.getPlatformUsage().get("인스타그램")).isEqualTo(1L); // blog3
+
+            // 오늘 작성된 블로그 리스트 검증
+            assertThat(response.getTodayBlogItemList()).isNotNull();
+            assertThat(response.getTodayBlogItemList()).hasSize(1);
+            assertThat(response.getTodayBlogItemList().get(0).getTitle()).isEqualTo("오늘의 블로그");
+
+            // 검증: 메서드 호출 확인
+            verify(blogRepository).countByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class));
+            verify(blogRepository).count();
+            verify(userRepository).countByRole(USER);
+            // findAll은 calculateDistributionAndUsage에서 한 번만 호출됨
+            verify(blogRepository).findAll();
+            // findAll은 calculateDistributionAndUsage와 getTodayBlogList에서 각각 호출되므로 2번
+            verify(blogTemplateRepository, times(2)).findAll();
+            verify(blogRepository).findAllByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class));
+        }
+
+        @Test
+        @DisplayName("성공: 데이터가 없을 때 빈 결과를 반환한다")
+        void getDashboardData_Success_EmptyData() {
+            // given
+            given(blogRepository.countByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
+                    .willReturn(0);
+            given(blogRepository.count()).willReturn(0L);
+            given(userRepository.countByRole(USER)).willReturn(0);
+            given(blogRepository.findAll()).willReturn(new ArrayList<>());
+            given(blogTemplateRepository.findAll()).willReturn(new ArrayList<>());
+            given(blogRepository.findAllByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
+                    .willReturn(new ArrayList<>());
+
+            // when
+            DashboardResponse response = dashboardService.getDashboardData();
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.getActiveUserCount()).isEqualTo(0);
+            assertThat(response.getTodayBlogCount()).isEqualTo(0);
+            assertThat(response.getTotalBlogCount()).isEqualTo(0);
+            assertThat(response.getCategoryDistribution()).isEmpty();
+            assertThat(response.getPlatformUsage()).isEmpty();
+            assertThat(response.getTodayBlogItemList()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("성공: 템플릿 ID 파싱 실패 시 해당 블로그는 제외된다")
+        void getDashboardData_Success_InvalidTemplateId() {
+            // given
+            // 유효하지 않은 templateId를 가진 블로그
+            Blog invalidBlog = Blog.builder()
+                    .blogTemplateId("invalid-id")
+                    .title("유효하지 않은 템플릿 블로그")
+                    .content("내용")
+                    .userId("user1")
+                    .build();
+
+            List<Blog> allBlogs = List.of(blog1, invalidBlog);
+            List<BlogTemplate> allTemplates = List.of(template1);
+
+            given(blogRepository.countByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
+                    .willReturn(0);
+            given(blogRepository.count()).willReturn(2L);
+            given(userRepository.countByRole(USER)).willReturn(5);
+            given(blogRepository.findAll()).willReturn(allBlogs);
+            given(blogTemplateRepository.findAll()).willReturn(allTemplates);
+            given(blogRepository.findAllByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
+                    .willReturn(new ArrayList<>());
+
+            // when
+            DashboardResponse response = dashboardService.getDashboardData();
+
+            // then
+            assertThat(response).isNotNull();
+            // blog1만 카테고리에 포함되어야 함 (invalidBlog는 제외)
+            assertThat(response.getCategoryDistribution().get("패션")).isEqualTo(1L);
+            assertThat(response.getCategoryDistribution().get("의류")).isEqualTo(1L);
+        }
+
+        @Test
+        @DisplayName("성공: 플랫폼이 없는 템플릿의 경우 Unknown으로 표시된다")
+        void getDashboardData_Success_NoPlatform() {
+            // given
+            // 플랫폼이 없는 템플릿
+            BlogTemplate noPlatformTemplate = BlogTemplate.builder()
+                    .id(3L)
+                    .title("플랫폼 없음 템플릿")
+                    .categories(List.of("기타"))
+                    .platforms(new ArrayList<>()) // 빈 플랫폼 리스트
+                    .shopUrl("https://shop3.com")
+                    .includeImages(false)
+                    .imageCount(0)
+                    .charLimit(500)
+                    .dailyPostTime(LocalTime.of(12, 0))
+                    .build();
+
+            Blog blogWithNoPlatform = Blog.builder()
+                    .blogTemplateId("3")
+                    .title("플랫폼 없는 블로그")
+                    .content("내용")
+                    .userId("user1")
+                    .build();
+
+            List<Blog> todayBlogs = List.of(blogWithNoPlatform);
+            List<BlogTemplate> allTemplates = List.of(noPlatformTemplate);
+
+            given(blogRepository.countByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
+                    .willReturn(1);
+            given(blogRepository.count()).willReturn(1L);
+            given(userRepository.countByRole(USER)).willReturn(1);
+            given(blogRepository.findAll()).willReturn(new ArrayList<>());
+            given(blogTemplateRepository.findAll()).willReturn(allTemplates);
+            given(blogRepository.findAllByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
+                    .willReturn(todayBlogs);
+
+            // when
+            DashboardResponse response = dashboardService.getDashboardData();
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.getTodayBlogItemList()).hasSize(1);
+            assertThat(response.getTodayBlogItemList().get(0).getPlatform()).isEqualTo("Unknown");
+        }
+    }
+}
+

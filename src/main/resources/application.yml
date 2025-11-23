@@ -39,3 +39,21 @@ springdoc:
 logging:
   level:
     io.github.cryschan.berepository: ${LOG_LEVEL:DEBUG}
+
+jwt:
+  secret: ${JWT_SECRET:default-secret-key-for-development-only-change-in-production}  # 환경변수에서 읽기
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION:3600000}  # 1시간 (밀리초)
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}  # 7일 (밀리초)
+
+# Initial Data Configuration
+init:
+  admin:
+    email: ${INIT_ADMIN_EMAIL:admin@repository.com}
+    password: ${INIT_ADMIN_PASSWORD:1234qwer}
+    username: ${INIT_ADMIN_USERNAME:System Admin}
+    department: ${INIT_ADMIN_DEPARTMENT:Management}
+  user:
+    email: ${INIT_USER_EMAIL:user@repository.com}
+    password: ${INIT_USER_PASSWORD:1234qwer}
+    username: ${INIT_USER_USERNAME:Test User}
+    department: ${INIT_USER_DEPARTMENT:Development}

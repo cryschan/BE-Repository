@@ -80,3 +80,9 @@ data/
 *.swp
 *.swo
 *~
+
+### Claude Code ###
+.claude
+
+### Documentation ###
+docs/task/
