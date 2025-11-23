@@ -18,7 +18,7 @@ public class DashboardResponse {
     private Map<String, Long> platformUsage;
 
     private List<TodayBlogItem> todayBlogItemList;
-    
+
     private Long totalTokenUsage;  // 사용한 토큰 수
 
 }
