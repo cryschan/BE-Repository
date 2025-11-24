@@ -10,6 +10,8 @@ import io.github.cryschan.berepository.domain.dashboard.dto.DashboardResponse;
 import io.github.cryschan.berepository.domain.dashboard.dto.TodayBlogItem;
 import io.github.cryschan.berepository.domain.dashboard.entity.Dashboard;
 import io.github.cryschan.berepository.domain.dashboard.repository.DashboardRepository;
+import io.github.cryschan.berepository.domain.user.entity.role.UserRole;
+import io.github.cryschan.berepository.domain.user.exception.UserException;
 import io.github.cryschan.berepository.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +39,12 @@ public class DashboardService {
     private final DashboardRepository dashboardRepository;
     private final ObjectMapper objectMapper;
 
-    public DashboardResponse getDashboardData() {
+    public DashboardResponse getDashboardData(Long userId) {
+        // Admin 권한 체크
+        if (!isAdmin(userId)) {
+            throw UserException.accessDenied("대시보드");
+        }
+
         // 오늘 날짜 기준으로 대시보드 데이터 계산
         LocalDateTime today = LocalDateTime.now().toLocalDate().atStartOfDay();
         DashboardData data = calculateDashboardData(today);
@@ -175,15 +182,12 @@ public class DashboardService {
 
     /* Blog에서 템플릿 조회 (공통 로직) */
     private BlogTemplate getTemplateFromBlog(Blog blog, Map<Long, BlogTemplate> templateMap) {
-        try {
-            Long templateId = Long.parseLong(blog.getBlogTemplateId());
-            return templateMap.get(templateId);
-        } catch (NumberFormatException e) {
-            // templateId 파싱 실패 시 로깅 후 null 반환
-            log.warn("Failed to parse blogTemplateId: {} for blog id: {}",
-                    blog.getBlogTemplateId(), blog.getId(), e);
+        Long templateId = blog.getBlogTemplateId();
+        if (templateId == null) {
+            log.warn("blogTemplateId is null for blog id: {}", blog.getId());
             return null;
         }
+        return templateMap.get(templateId);
     }
 
     /* 사용한 토큰 수 계산 */
@@ -198,11 +202,12 @@ public class DashboardService {
      * 스케줄러에서 호출하여 매일 자정에 실행
      *
      * @param date 저장할 날짜 (LocalDateTime - 해당 날짜의 00:00:00)
+     * @param adminUserId 관리자 사용자 ID (스케줄러 호출 시 null 가능)
      * @throws RuntimeException 데이터 계산 또는 저장 실패 시
      */
     @Transactional
-    public void updateDashboardData(LocalDateTime date) {
-        log.info("Updating dashboard data for date: {}", date);
+    public void updateDashboardData(LocalDateTime date, Long adminUserId) {
+        log.info("Updating dashboard data for date: {}, adminUserId: {}", date, adminUserId);
 
         try {
             // 공통 계산 메서드 사용
@@ -222,6 +227,7 @@ public class DashboardService {
                 // 기존 데이터가 있으면 업데이트
                 dashboard = existingDashboard.get();
                 dashboard.updateData(
+                        adminUserId,
                         data.activeUserCount(),
                         data.todayBlogCount(),
                         data.totalBlogCount(),
@@ -234,7 +240,7 @@ public class DashboardService {
                 // 기존 데이터가 없으면 새로 생성
                 dashboard = Dashboard.builder()
                         .date(startOfDay)  // 날짜 기준으로 저장 (00:00:00)
-                        .adminUserId(null)  // 관리자 ID는 필요시 추후 추가
+                        .adminUserId(adminUserId)  // 관리자 ID 저장
                         .activeUserCount(data.activeUserCount())
                         .todayBlogCount(data.todayBlogCount())
                         .totalBlogCount(data.totalBlogCount())
@@ -273,6 +279,18 @@ public class DashboardService {
             log.error("Failed to serialize object to JSON: {}", object, e);
             throw new RuntimeException("대시보드 데이터 직렬화에 실패했습니다.", e);
         }
+    }
+
+    /**
+     * Admin 권한 체크
+     *
+     * @param userId 사용자 ID
+     * @return Admin 권한 여부
+     */
+    private boolean isAdmin(Long userId) {
+        return userRepository.findById(userId)
+                .map(user -> user.getRole() == UserRole.ADMIN)
+                .orElse(false);
     }
 
     /**
