@@ -66,7 +66,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.of(
-                        "입력값 검증에 실패했습니다.",
+                        "이메일 혹은 비밀번호가 일치하지 않습니다.",
                         HttpStatus.BAD_REQUEST.value(),
                         "C001",
                         fieldErrors

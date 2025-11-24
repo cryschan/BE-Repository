@@ -7,7 +7,7 @@ public enum ErrorCode {
     // ==================== User 도메인 (U로 시작) ====================
     USER_NOT_FOUND("U001", "사용자를 찾을 수 없습니다", HttpStatus.NOT_FOUND),
     USER_DUPLICATION("U002", "이미 존재하는 사용자입니다", HttpStatus.CONFLICT),
-    INVALID_CREDENTIALS("U003", "인증 정보가 올바르지 않습니다", HttpStatus.UNAUTHORIZED),
+    INVALID_CREDENTIALS("U003", "이메일 혹은 비밀번호가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED("U004", "인증이 필요합니다", HttpStatus.UNAUTHORIZED),
     ACCESS_DENIED("U005", "접근 권한이 없습니다", HttpStatus.FORBIDDEN),
 
