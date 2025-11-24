@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @Tag(name = "사용자 프로필", description = "사용자 프로필 조회 및 관리 API")
 @RequiredArgsConstructor
-@RequestMapping("/api/userProfile")
+@RequestMapping("/api/user-profile")
 @RestController
 public class ProfileController {
 
