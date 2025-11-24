@@ -25,7 +25,7 @@ public record BlogTemplateCreateRequest(
         List<@NotBlank String> categories,
 
         @NotEmpty
-        @Schema(example = "[\"blog\"]")
+        @Schema(example = "[\"naver\", \"tistory\"]")
         List<@NotBlank String> platforms,
 
         @NotBlank

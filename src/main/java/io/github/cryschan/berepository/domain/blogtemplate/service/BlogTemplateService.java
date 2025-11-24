@@ -1,21 +1,19 @@
 package io.github.cryschan.berepository.domain.blogtemplate.service;
 
 import io.github.cryschan.berepository.domain.blogtemplate.entity.BlogTemplate;
+import io.github.cryschan.berepository.domain.blogtemplate.exception.BlogTemplateException;
 import io.github.cryschan.berepository.domain.blogtemplate.repository.BlogTemplateRepository;
 import io.github.cryschan.berepository.domain.blogtemplate.dto.response.BlogTemplateResponse;
 import io.github.cryschan.berepository.domain.user.entity.role.UserRole;
 import io.github.cryschan.berepository.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalTime;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Set;
 
 @RequiredArgsConstructor
@@ -35,17 +33,14 @@ public class BlogTemplateService {
     @Transactional
     public BlogTemplateResponse createTemplateResponse(Long userId, BlogTemplate template) {
         blogTemplateRepository.findByUserId(userId).ifPresent(existing -> {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "User already has a blog template");
+            throw BlogTemplateException.alreadyExists(userId);
         });
-        if (template.getUserId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User id is required for template creation");
-        }
         return BlogTemplateResponse.from(createTemplate(template));
     }
 
     public BlogTemplate getTemplate(Long templateId) {
         return blogTemplateRepository.findById(templateId)
-                .orElseThrow(() -> new NoSuchElementException("Blog template not found: " + templateId));
+                .orElseThrow(() -> BlogTemplateException.notFound(templateId));
     }
 
     public BlogTemplateResponse getTemplateResponse(Long templateId) {
@@ -55,12 +50,12 @@ public class BlogTemplateService {
     public BlogTemplateResponse getTemplateResponseByUserId(Long userId) {
         return blogTemplateRepository.findByUserId(userId)
                 .map(BlogTemplateResponse::from)
-                .orElseThrow(() -> new NoSuchElementException("Blog template not found for user: " + userId));
+                .orElseThrow(() -> BlogTemplateException.notFoundByUserId(userId));
     }
 
     public BlogTemplateResponse getTemplateResponseByUserId(Long targetUserId, Long requesterId) {
         if (!targetUserId.equals(requesterId) && !isAdmin(requesterId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You may only access your own template");
+            throw BlogTemplateException.accessDenied("본인의 템플릿만 조회할 수 있습니다");
         }
         return getTemplateResponseByUserId(targetUserId);
     }
@@ -181,7 +176,7 @@ public class BlogTemplateService {
     private void ensureOwnerOrAdmin(Long templateId, Long userId) {
         BlogTemplate template = getTemplate(templateId);
         if (!template.getUserId().equals(userId) && !isAdmin(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not own this template");
+            throw BlogTemplateException.accessDenied(templateId);
         }
     }
 
