@@ -84,5 +84,7 @@ data/
 ### Claude Code ###
 .claude
 
-### Documentation ###
-docs/task/
+### Documentation - Only show architecture and guides ###
+docs/*
+!docs/architecture/
+!docs/guides/
