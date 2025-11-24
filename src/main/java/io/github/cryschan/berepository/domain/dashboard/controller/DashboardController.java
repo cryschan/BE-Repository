@@ -10,10 +10,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 대시보드 관련 컨트롤러
- * 대시보드 데이터 조회 기능을 처리합니다.
- */
 @Tag(name = "대시보드", description = "대시보드 API")
 @RestController
 @RequestMapping("/api/dashboard")

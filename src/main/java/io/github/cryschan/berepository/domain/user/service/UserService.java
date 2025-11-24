@@ -6,16 +6,12 @@ import io.github.cryschan.berepository.domain.user.dto.request.SignupRequest;
 import io.github.cryschan.berepository.domain.user.dto.response.LoginResponse;
 import io.github.cryschan.berepository.domain.user.dto.response.UserResponse;
 import io.github.cryschan.berepository.domain.user.entity.User;
-import io.github.cryschan.berepository.domain.user.exception.DuplicationUserException;
-import io.github.cryschan.berepository.domain.user.exception.InvalidCredentialsException;
-import io.github.cryschan.berepository.domain.user.exception.UserNotFoundException;
+import io.github.cryschan.berepository.domain.user.exception.UserException;
 import io.github.cryschan.berepository.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -32,7 +28,7 @@ public class UserService {
 
         // 중복 이메일 체크
         if (userRepository.findByEmail(signupRequest.email()).isPresent()) {
-            throw new DuplicationUserException(signupRequest.email());
+            throw UserException.duplication(signupRequest.email());
         }
 
         // 비밀번호 암호화
@@ -54,11 +50,11 @@ public class UserService {
 
         // 이메일로 사용자 조회
         User user = userRepository.findByEmail(loginRequest.email())
-                .orElseThrow(() -> new InvalidCredentialsException(loginRequest.email()));
+                .orElseThrow(() -> UserException.notFound(loginRequest.email()));
 
         // 비밀번호 일치 여부 확인
         if (!passwordEncoder.matches(loginRequest.password(), user.getPassword())) {
-            throw new InvalidCredentialsException(loginRequest.email());
+            throw UserException.invalidCredentials();
         }
 
         // JWT 토큰 생성

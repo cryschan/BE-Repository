@@ -19,6 +19,11 @@ public enum ErrorCode {
     FAQ_NOT_FOUND("F001", "FAQ를 찾을 수 없습니다", HttpStatus.NOT_FOUND),
     FAQ_ACCESS_DENIED("F002", "FAQ에 대한 권한이 없습니다", HttpStatus.FORBIDDEN),
 
+    // ==================== BlogTemplate 도메인 (BT로 시작) ====================
+    BLOG_TEMPLATE_NOT_FOUND("BT001", "블로그 템플릿을 찾을 수 없습니다", HttpStatus.NOT_FOUND),
+    BLOG_TEMPLATE_ACCESS_DENIED("BT002", "블로그 템플릿에 대한 권한이 없습니다", HttpStatus.FORBIDDEN),
+    BLOG_TEMPLATE_ALREADY_EXISTS("BT003", "이미 블로그 템플릿이 존재합니다", HttpStatus.CONFLICT),
+
     // ==================== 공통 (C로 시작) ====================
     INVALID_INPUT("C001", "입력값이 올바르지 않습니다", HttpStatus.BAD_REQUEST),
     INVALID_REQUEST("C002", "잘못된 요청입니다", HttpStatus.BAD_REQUEST),
