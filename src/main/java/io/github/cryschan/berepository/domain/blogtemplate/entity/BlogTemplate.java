@@ -74,6 +74,9 @@ public class BlogTemplate {
     @Column(nullable = false)
     private LocalTime dailyPostTime;
 
+    @Column(name = "user_id", nullable = false, updatable = false)
+    private Long userId;
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
@@ -85,8 +88,8 @@ public class BlogTemplate {
     }
 
     public void updateImageOptions(boolean includeImages, int imageCount) {
-        if (includeImages && imageCount < 1) {
-            throw new IllegalArgumentException("imageCount must be positive when images are included.");
+        if (includeImages && (imageCount < 1 || imageCount > 10)) {
+            throw new IllegalArgumentException("imageCount must be between 1 and 10 when images are included.");
         }
         this.includeImages = includeImages;
         this.imageCount = includeImages ? imageCount : 0;
