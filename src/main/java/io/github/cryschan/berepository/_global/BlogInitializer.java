@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Component
 @Order(3)
-public class BlogDataInitializer implements CommandLineRunner {
+public class BlogInitializer implements CommandLineRunner {
 
     private final BlogRepository blogRepository;
 
