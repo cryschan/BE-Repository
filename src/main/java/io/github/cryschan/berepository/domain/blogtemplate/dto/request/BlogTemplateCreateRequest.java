@@ -17,7 +17,7 @@ import java.util.List;
 
 public record BlogTemplateCreateRequest(
         @Size(max = 100)
-        @Schema(example = "Untitled", description = "비우면 Untitled로 저장됩니다.")
+        @Schema(example = "패션 블로그 템플릿", description = "비우면 '{사용자명}의 템플릿'으로 저장됩니다.")
         String title,
 
         @NotEmpty
@@ -72,8 +72,8 @@ public record BlogTemplateCreateRequest(
                 && dailyPostTime.getNano() == 0;
     }
 
-    public BlogTemplate toEntity(Long userId) {
-        String safeTitle = (title == null || title.isBlank()) ? "Untitled" : title;
+    public BlogTemplate toEntity(Long userId, String username) {
+        String safeTitle = (title == null || title.isBlank()) ? username + "의 템플릿" : title;
         return BlogTemplate.builder()
                 .title(safeTitle)
                 .categories(new ArrayList<>(categories))

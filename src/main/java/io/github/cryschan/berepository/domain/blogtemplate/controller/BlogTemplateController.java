@@ -5,6 +5,7 @@ import io.github.cryschan.berepository.domain.blogtemplate.dto.request.BlogTempl
 import io.github.cryschan.berepository.domain.blogtemplate.dto.response.BlogTemplateResponse;
 import io.github.cryschan.berepository.domain.blogtemplate.entity.BlogTemplate;
 import io.github.cryschan.berepository.domain.blogtemplate.service.BlogTemplateService;
+import io.github.cryschan.berepository.domain.user.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -32,6 +33,7 @@ import java.security.Principal;
 public class BlogTemplateController {
 
     private final BlogTemplateService blogTemplateService;
+    private final UserRepository userRepository;
 
     @PostMapping
     public ResponseEntity<BlogTemplateResponse> createTemplate(
@@ -39,7 +41,10 @@ public class BlogTemplateController {
             Principal principal
     ) {
         Long userId = extractUserId(principal);
-        BlogTemplateResponse saved = blogTemplateService.createTemplateResponse(userId, request.toEntity(userId));
+        String username = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"))
+                .getUsername();
+        BlogTemplateResponse saved = blogTemplateService.createTemplateResponse(userId, request.toEntity(userId, username));
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
