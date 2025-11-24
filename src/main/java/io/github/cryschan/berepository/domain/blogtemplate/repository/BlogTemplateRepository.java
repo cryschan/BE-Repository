@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface BlogTemplateRepository extends JpaRepository<BlogTemplate, Long> {
 
@@ -18,4 +19,6 @@ public interface BlogTemplateRepository extends JpaRepository<BlogTemplate, Long
     List<BlogTemplate> findByAnyPlatform(@Param("platforms") Collection<String> platforms);
 
     List<BlogTemplate> findByDailyPostTime(LocalTime postTime);
+
+    Optional<BlogTemplate> findByUserId(Long userId);
 }
