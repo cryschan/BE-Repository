@@ -30,8 +30,8 @@ public class BlogResponse {
     @Schema(description = "이미지 URL", example = "https://example.com/images/tshirt.jpg")
     private String imgUrl;
 
-    @Schema(description = "블로그 템플릿 ID", example = "template-001")
-    private String blogTemplateId;
+    @Schema(description = "블로그 템플릿 ID", example = "1L")
+    private Long blogTemplateId;
 
     @Schema(description = "생성 일시", example = "2025-11-20T20:00:00")
     private LocalDateTime createdAt;

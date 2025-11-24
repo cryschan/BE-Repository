@@ -176,7 +176,7 @@ public class DashboardService {
     /* Blog에서 템플릿 조회 (공통 로직) */
     private BlogTemplate getTemplateFromBlog(Blog blog, Map<Long, BlogTemplate> templateMap) {
         try {
-            Long templateId = Long.parseLong(blog.getBlogTemplateId());
+            Long templateId = blog.getBlogTemplateId();
             return templateMap.get(templateId);
         } catch (NumberFormatException e) {
             // templateId 파싱 실패 시 로깅 후 null 반환

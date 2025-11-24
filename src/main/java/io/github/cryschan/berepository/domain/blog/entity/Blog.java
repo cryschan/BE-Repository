@@ -12,6 +12,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "blogs")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
@@ -22,7 +23,7 @@ public class Blog {
     private Long id;
 
     @Column(name = "blog_template_id", nullable = false)
-    private String blogTemplateId;
+    private Long blogTemplateId;
 
     @Column(nullable = false)
     private String title;
@@ -48,7 +49,7 @@ public class Blog {
     private Long userId;
 
     @Builder
-    public Blog(String blogTemplateId, String title, String imgUrl,
+    public Blog(Long blogTemplateId, String title, String imgUrl,
                 String content, String category, Long userId) {
         this.blogTemplateId = blogTemplateId;
         this.title = title;
@@ -70,7 +71,7 @@ public class Blog {
         this.imgUrl = imgUrl;
     }
 
-    public void updateBlogTemplate(String blogTemplateId) {
+    public void updateBlogTemplate(Long blogTemplateId) {
         this.blogTemplateId = blogTemplateId;
     }
 

@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-@Order(2)
+@Order(3)
 public class BlogDataInitializer implements CommandLineRunner {
 
     private final BlogRepository blogRepository;
@@ -53,7 +53,7 @@ public class BlogDataInitializer implements CommandLineRunner {
 
         // 1. 여름 남성 반팔 티셔츠 추천
         createBlog(
-                "template-001",
+                1L,
                 "여름 남성 반팔 티셔츠 추천 - 시원하고 스타일리시한",
                 "https://example.com/images/tshirt.jpg",
                 "# 여름 남성 반팔 티셔츠 추천\n\n여름철 필수 아이템인 반팔 티셔츠를 소개합니다...",
@@ -63,7 +63,7 @@ public class BlogDataInitializer implements CommandLineRunner {
 
         // 2. 메이크업 초보자를 위한 베이스 메이크업 제품 가이드
         createBlog(
-                "template-001",
+                1L,
                 "메이크업 초보자를 위한 베이스 메이크업 제품 가이드",
                 "https://example.com/images/makeup.jpg",
                 "# 베이스 메이크업 가이드\n\n초보자도 쉽게 따라할 수 있는 베이스 메이크업...",
@@ -73,7 +73,7 @@ public class BlogDataInitializer implements CommandLineRunner {
 
         // 3. 편안한 운동화 추천
         createBlog(
-                "template-002",
+                2L,
                 "편안한 운동화 추천 - 일상에서 신기 좋은",
                 "https://example.com/images/sneakers.jpg",
                 "# 운동화 추천\n\n일상생활에서 편하게 신을 수 있는 운동화를 추천합니다...",
@@ -83,7 +83,7 @@ public class BlogDataInitializer implements CommandLineRunner {
 
         // 4. 겨울 패딩 추천
         createBlog(
-                "template-001",
+                1L,
                 "겨울 패딩 추천 - 따뜻하고 가벼운",
                 "https://example.com/images/padding.jpg",
                 "# 겨울 패딩 추천\n\n가볍고 따뜻한 겨울 패딩을 소개합니다...",
@@ -93,7 +93,7 @@ public class BlogDataInitializer implements CommandLineRunner {
 
         // 5. 스킨케어 루틴 완벽 가이드
         createBlog(
-                "template-002",
+                2L,
                 "스킨케어 루틴 완벽 가이드",
                 "https://example.com/images/skincare.jpg",
                 "# 스킨케어 루틴\n\n올바른 스킨케어 순서와 제품 추천...",
@@ -103,7 +103,7 @@ public class BlogDataInitializer implements CommandLineRunner {
 
         // 6. 홈 인테리어 소품 추천
         createBlog(
-                "template-001",
+                1L,
                 "홈 인테리어 소품 추천",
                 "https://example.com/images/interior.jpg",
                 "# 인테리어 소품\n\n집을 더 아늑하게 만들어줄 소품들...",
@@ -113,7 +113,7 @@ public class BlogDataInitializer implements CommandLineRunner {
 
         // 7. 최신 노트북 비교 리뷰
         createBlog(
-                "template-002",
+                2L,
                 "최신 노트북 비교 리뷰",
                 "https://example.com/images/laptop.jpg",
                 "# 노트북 리뷰\n\n2024년 최신 노트북 비교 분석...",
@@ -123,7 +123,7 @@ public class BlogDataInitializer implements CommandLineRunner {
 
         // 8. 건강한 간식 추천
         createBlog(
-                "template-001",
+                1L,
                 "건강한 간식 추천",
                 "https://example.com/images/snack.jpg",
                 "# 건강 간식\n\n맛있고 건강한 간식 추천...",
@@ -133,7 +133,7 @@ public class BlogDataInitializer implements CommandLineRunner {
 
         // 9. 남성 액세서리 추천
         createBlog(
-                "template-002",
+                2L,
                 "남성 액세서리 추천 - 시계와 팔찌",
                 "https://example.com/images/accessory-men.jpg",
                 "# 남성 액세서리\n\n스타일을 완성하는 액세서리...",
@@ -143,7 +143,7 @@ public class BlogDataInitializer implements CommandLineRunner {
 
         // 10. 여성 가방 추천
         createBlog(
-                "template-001",
+                1L,
                 "여성 가방 추천 - 실용적이고 예쁜",
                 "https://example.com/images/bag.jpg",
                 "# 여성 가방\n\n실용성과 디자인을 모두 갖춘 가방...",
@@ -153,7 +153,7 @@ public class BlogDataInitializer implements CommandLineRunner {
 
         // 11. 주방 용품 추천
         createBlog(
-                "template-002",
+                2L,
                 "주방 용품 추천 - 요리가 즐거워지는",
                 "https://example.com/images/kitchen.jpg",
                 "# 주방 용품\n\n요리를 더 편하게 만들어줄 용품들...",
@@ -163,7 +163,7 @@ public class BlogDataInitializer implements CommandLineRunner {
 
         // 12. 무선 이어폰 추천
         createBlog(
-                "template-001",
+                1L,
                 "무선 이어폰 추천 - 음질과 편의성",
                 "https://example.com/images/earbuds.jpg",
                 "# 무선 이어폰\n\n최고의 무선 이어폰 추천...",
@@ -174,7 +174,7 @@ public class BlogDataInitializer implements CommandLineRunner {
         log.info("[CREATED] Total {} blogs created successfully", blogRepository.count());
     }
 
-    private void createBlog(String templateId, String title, String imgUrl,
+    private void createBlog(Long templateId, String title, String imgUrl,
                             String content, String category, Long userId) {
         log.debug("Creating blog: {}", title);
 
