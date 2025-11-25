@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -29,7 +30,6 @@ import static io.github.cryschan.berepository.domain.user.entity.role.UserRole.U
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -106,6 +106,7 @@ class DashboardServiceTest {
                 .content("내용 1")
                 .userId(1L)
                 .build();
+        ReflectionTestUtils.setField(blog1, "id", 1L);
 
         blog2 = Blog.builder()
                 .blogTemplateId(1L)
@@ -113,6 +114,7 @@ class DashboardServiceTest {
                 .content("내용 2")
                 .userId(2L)
                 .build();
+        ReflectionTestUtils.setField(blog2, "id", 2L);
 
         blog3 = Blog.builder()
                 .blogTemplateId(2L)
@@ -120,6 +122,7 @@ class DashboardServiceTest {
                 .content("내용 3")
                 .userId(3L)
                 .build();
+        ReflectionTestUtils.setField(blog3, "id", 3L);
 
         // 오늘 작성된 블로그
         todayBlog = Blog.builder()
@@ -128,6 +131,7 @@ class DashboardServiceTest {
                 .content("오늘 작성된 내용")
                 .userId(1L)
                 .build();
+        ReflectionTestUtils.setField(todayBlog, "id", 4L);
     }
 
     @Nested
@@ -188,8 +192,8 @@ class DashboardServiceTest {
             verify(userRepository).countByRole(USER);
             // findAll은 calculateDistributionAndUsage에서 한 번만 호출됨
             verify(blogRepository).findAll();
-            // findAll은 calculateDistributionAndUsage와 getTodayBlogList에서 각각 호출되므로 2번
-            verify(blogTemplateRepository, times(2)).findAll();
+            // getTemplateMap()이 한 번만 호출되므로 findAll()도 1번만 호출됨
+            verify(blogTemplateRepository).findAll();
             verify(blogRepository).findAllByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class));
             verify(userRepository).findAll();
         }
