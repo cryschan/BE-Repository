@@ -1,13 +1,10 @@
 package io.github.cryschan.berepository.domain.dashboard.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.cryschan.berepository.domain.blog.entity.Blog;
 import io.github.cryschan.berepository.domain.blog.repository.BlogRepository;
 import io.github.cryschan.berepository.domain.blogtemplate.entity.BlogTemplate;
 import io.github.cryschan.berepository.domain.blogtemplate.repository.BlogTemplateRepository;
 import io.github.cryschan.berepository.domain.dashboard.dto.DashboardResponse;
-import io.github.cryschan.berepository.domain.dashboard.repository.DashboardRepository;
-import io.github.cryschan.berepository.domain.user.entity.User;
 import io.github.cryschan.berepository.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,19 +14,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-import static io.github.cryschan.berepository.domain.user.entity.role.UserRole.ADMIN;
 import static io.github.cryschan.berepository.domain.user.entity.role.UserRole.USER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,12 +40,6 @@ class DashboardServiceTest {
     @Mock
     private UserRepository userRepository;
 
-    @Mock
-    private DashboardRepository dashboardRepository;
-
-    @Mock
-    private ObjectMapper objectMapper;
-
     @InjectMocks
     private DashboardService dashboardService;
 
@@ -60,20 +49,9 @@ class DashboardServiceTest {
     private Blog blog2;
     private Blog blog3;
     private Blog todayBlog;
-    private User adminUser;
-    private Long adminUserId = 1L;
 
     @BeforeEach
     void setUp() {
-        // Admin 사용자 데이터 준비
-        adminUser = User.builder()
-                .email("admin@test.com")
-                .password("password")
-                .username("admin")
-                .role(ADMIN)
-                .department("관리부")
-                .build();
-
         // 템플릿 데이터 준비
         template1 = BlogTemplate.builder()
                 .id(1L)
@@ -101,37 +79,33 @@ class DashboardServiceTest {
 
         // 블로그 데이터 준비
         blog1 = Blog.builder()
-                .blogTemplateId(1L)
+                .blogTemplateId("1")
                 .title("패션 블로그 1")
                 .content("내용 1")
-                .userId(1L)
+                .userId("user1")
                 .build();
-        ReflectionTestUtils.setField(blog1, "id", 1L);
 
         blog2 = Blog.builder()
-                .blogTemplateId(1L)
+                .blogTemplateId("1")
                 .title("패션 블로그 2")
                 .content("내용 2")
-                .userId(2L)
+                .userId("user2")
                 .build();
-        ReflectionTestUtils.setField(blog2, "id", 2L);
 
         blog3 = Blog.builder()
-                .blogTemplateId(2L)
+                .blogTemplateId("2")
                 .title("뷰티 블로그 1")
                 .content("내용 3")
-                .userId(3L)
+                .userId("user3")
                 .build();
-        ReflectionTestUtils.setField(blog3, "id", 3L);
 
         // 오늘 작성된 블로그
         todayBlog = Blog.builder()
-                .blogTemplateId(1L)
+                .blogTemplateId("1")
                 .title("오늘의 블로그")
                 .content("오늘 작성된 내용")
-                .userId(1L)
+                .userId("user1")
                 .build();
-        ReflectionTestUtils.setField(todayBlog, "id", 4L);
     }
 
     @Nested
@@ -146,8 +120,6 @@ class DashboardServiceTest {
             List<BlogTemplate> allTemplates = List.of(template1, template2);
             List<Blog> todayBlogs = List.of(todayBlog);
 
-            // Admin 권한 체크를 위한 모킹
-            given(userRepository.findById(adminUserId)).willReturn(Optional.of(adminUser));
             given(blogRepository.countByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
                     .willReturn(1);
             given(blogRepository.count()).willReturn(3L);
@@ -156,10 +128,9 @@ class DashboardServiceTest {
             given(blogTemplateRepository.findAll()).willReturn(allTemplates);
             given(blogRepository.findAllByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
                     .willReturn(todayBlogs);
-            given(userRepository.findAll()).willReturn(new ArrayList<>());
 
             // when
-            DashboardResponse response = dashboardService.getDashboardData(adminUserId);
+            DashboardResponse response = dashboardService.getDashboardData();
 
             // then
             assertThat(response).isNotNull();
@@ -186,23 +157,20 @@ class DashboardServiceTest {
             assertThat(response.getTodayBlogItemList().get(0).getTitle()).isEqualTo("오늘의 블로그");
 
             // 검증: 메서드 호출 확인
-            verify(userRepository).findById(adminUserId);
             verify(blogRepository).countByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class));
             verify(blogRepository).count();
             verify(userRepository).countByRole(USER);
             // findAll은 calculateDistributionAndUsage에서 한 번만 호출됨
             verify(blogRepository).findAll();
-            // getTemplateMap()이 한 번만 호출되므로 findAll()도 1번만 호출됨
-            verify(blogTemplateRepository).findAll();
+            // findAll은 calculateDistributionAndUsage와 getTodayBlogList에서 각각 호출되므로 2번
+            verify(blogTemplateRepository, times(2)).findAll();
             verify(blogRepository).findAllByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class));
-            verify(userRepository).findAll();
         }
 
         @Test
         @DisplayName("성공: 데이터가 없을 때 빈 결과를 반환한다")
         void getDashboardData_Success_EmptyData() {
             // given
-            given(userRepository.findById(adminUserId)).willReturn(Optional.of(adminUser));
             given(blogRepository.countByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
                     .willReturn(0);
             given(blogRepository.count()).willReturn(0L);
@@ -211,10 +179,9 @@ class DashboardServiceTest {
             given(blogTemplateRepository.findAll()).willReturn(new ArrayList<>());
             given(blogRepository.findAllByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
                     .willReturn(new ArrayList<>());
-            given(userRepository.findAll()).willReturn(new ArrayList<>());
 
             // when
-            DashboardResponse response = dashboardService.getDashboardData(adminUserId);
+            DashboardResponse response = dashboardService.getDashboardData();
 
             // then
             assertThat(response).isNotNull();
@@ -227,21 +194,20 @@ class DashboardServiceTest {
         }
 
         @Test
-        @DisplayName("성공: 존재하지 않는 템플릿 ID를 가진 블로그는 제외된다")
+        @DisplayName("성공: 템플릿 ID 파싱 실패 시 해당 블로그는 제외된다")
         void getDashboardData_Success_InvalidTemplateId() {
             // given
-            // 존재하지 않는 templateId를 가진 블로그
+            // 유효하지 않은 templateId를 가진 블로그
             Blog invalidBlog = Blog.builder()
-                    .blogTemplateId(999L)  // 존재하지 않는 템플릿 ID
+                    .blogTemplateId("invalid-id")
                     .title("유효하지 않은 템플릿 블로그")
                     .content("내용")
-                    .userId(1L)
+                    .userId("user1")
                     .build();
 
             List<Blog> allBlogs = List.of(blog1, invalidBlog);
             List<BlogTemplate> allTemplates = List.of(template1);
 
-            given(userRepository.findById(adminUserId)).willReturn(Optional.of(adminUser));
             given(blogRepository.countByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
                     .willReturn(0);
             given(blogRepository.count()).willReturn(2L);
@@ -250,10 +216,9 @@ class DashboardServiceTest {
             given(blogTemplateRepository.findAll()).willReturn(allTemplates);
             given(blogRepository.findAllByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
                     .willReturn(new ArrayList<>());
-            given(userRepository.findAll()).willReturn(new ArrayList<>());
 
             // when
-            DashboardResponse response = dashboardService.getDashboardData(adminUserId);
+            DashboardResponse response = dashboardService.getDashboardData();
 
             // then
             assertThat(response).isNotNull();
@@ -280,16 +245,15 @@ class DashboardServiceTest {
                     .build();
 
             Blog blogWithNoPlatform = Blog.builder()
-                    .blogTemplateId(3L)
+                    .blogTemplateId("3")
                     .title("플랫폼 없는 블로그")
                     .content("내용")
-                    .userId(1L)
+                    .userId("user1")
                     .build();
 
             List<Blog> todayBlogs = List.of(blogWithNoPlatform);
             List<BlogTemplate> allTemplates = List.of(noPlatformTemplate);
 
-            given(userRepository.findById(adminUserId)).willReturn(Optional.of(adminUser));
             given(blogRepository.countByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
                     .willReturn(1);
             given(blogRepository.count()).willReturn(1L);
@@ -298,10 +262,9 @@ class DashboardServiceTest {
             given(blogTemplateRepository.findAll()).willReturn(allTemplates);
             given(blogRepository.findAllByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
                     .willReturn(todayBlogs);
-            given(userRepository.findAll()).willReturn(new ArrayList<>());
 
             // when
-            DashboardResponse response = dashboardService.getDashboardData(adminUserId);
+            DashboardResponse response = dashboardService.getDashboardData();
 
             // then
             assertThat(response).isNotNull();
