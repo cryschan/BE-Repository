@@ -32,6 +32,9 @@ public class BlogTemplateService {
 
     @Transactional
     public BlogTemplateResponse createTemplateResponse(Long userId, BlogTemplate template) {
+        if (!userRepository.existsById(userId)) {
+            throw BlogTemplateException.accessDenied("유효하지 않은 사용자입니다");
+        }
         blogTemplateRepository.findByUserId(userId).ifPresent(existing -> {
             throw BlogTemplateException.alreadyExists(userId);
         });
