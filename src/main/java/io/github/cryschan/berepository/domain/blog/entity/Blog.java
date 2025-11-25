@@ -23,7 +23,7 @@ public class Blog {
     private Long id;
 
     @Column(name = "blog_template_id", nullable = false)
-    private String blogTemplateId;
+    private Long blogTemplateId;
 
     @Column(nullable = false)
     private String title;
@@ -43,10 +43,10 @@ public class Blog {
     private LocalDateTime updatedAt;
 
     @Column(name = "user_id", nullable = false)
-    private String userId;
+    private Long userId;
 
     @Builder
-    public Blog(String blogTemplateId, String title, String imgUrl, String content, String userId) {
+    public Blog(Long blogTemplateId, String title, String imgUrl, String content, Long userId) {
         this.blogTemplateId = blogTemplateId;
         this.title = title;
         this.imgUrl = imgUrl;
@@ -66,7 +66,7 @@ public class Blog {
         this.imgUrl = imgUrl;
     }
 
-    public void updateBlogTemplate(String blogTemplateId) {
+    public void updateBlogTemplate(Long blogTemplateId) {
         this.blogTemplateId = blogTemplateId;
     }
 
