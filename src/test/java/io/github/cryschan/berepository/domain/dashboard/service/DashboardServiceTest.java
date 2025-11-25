@@ -79,32 +79,32 @@ class DashboardServiceTest {
 
         // 블로그 데이터 준비
         blog1 = Blog.builder()
-                .blogTemplateId("1")
+                .blogTemplateId(1L)
                 .title("패션 블로그 1")
                 .content("내용 1")
-                .userId("user1")
+                .userId(1L)
                 .build();
 
         blog2 = Blog.builder()
-                .blogTemplateId("1")
+                .blogTemplateId(1L)
                 .title("패션 블로그 2")
                 .content("내용 2")
-                .userId("user2")
+                .userId(2L)
                 .build();
 
         blog3 = Blog.builder()
-                .blogTemplateId("2")
+                .blogTemplateId(2L)
                 .title("뷰티 블로그 1")
                 .content("내용 3")
-                .userId("user3")
+                .userId(3L)
                 .build();
 
         // 오늘 작성된 블로그
         todayBlog = Blog.builder()
-                .blogTemplateId("1")
+                .blogTemplateId(1L)
                 .title("오늘의 블로그")
                 .content("오늘 작성된 내용")
-                .userId("user1")
+                .userId(1L)
                 .build();
     }
 
@@ -199,10 +199,10 @@ class DashboardServiceTest {
             // given
             // 유효하지 않은 templateId를 가진 블로그
             Blog invalidBlog = Blog.builder()
-                    .blogTemplateId("invalid-id")
+                    .blogTemplateId(99999L)
                     .title("유효하지 않은 템플릿 블로그")
                     .content("내용")
-                    .userId("user1")
+                    .userId(1L)
                     .build();
 
             List<Blog> allBlogs = List.of(blog1, invalidBlog);
@@ -245,10 +245,10 @@ class DashboardServiceTest {
                     .build();
 
             Blog blogWithNoPlatform = Blog.builder()
-                    .blogTemplateId("3")
+                    .blogTemplateId(3L)
                     .title("플랫폼 없는 블로그")
                     .content("내용")
-                    .userId("user1")
+                    .userId(1L)
                     .build();
 
             List<Blog> todayBlogs = List.of(blogWithNoPlatform);
