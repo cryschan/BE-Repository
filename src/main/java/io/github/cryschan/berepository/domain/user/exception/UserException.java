@@ -32,8 +32,8 @@ public class UserException extends DomainException {
      */
     public static UserException notFound(Long userId) {
         return new UserException(
-            ErrorCode.USER_NOT_FOUND,
-            String.format("사용자를 찾을 수 없습니다. ID: %d", userId)
+                ErrorCode.USER_NOT_FOUND,
+                String.format("사용자를 찾을 수 없습니다. ID: %d", userId)
         );
     }
 
@@ -42,8 +42,8 @@ public class UserException extends DomainException {
      */
     public static UserException notFound(String email) {
         return new UserException(
-            ErrorCode.USER_NOT_FOUND,
-            String.format("사용자를 찾을 수 없습니다. Email: %s", email)
+                ErrorCode.USER_NOT_FOUND,
+                String.format("사용자를 찾을 수 없습니다. Email: %s", email)
         );
     }
 
@@ -59,8 +59,8 @@ public class UserException extends DomainException {
      */
     public static UserException duplication(String email) {
         return new UserException(
-            ErrorCode.USER_DUPLICATION,
-            String.format("이미 존재하는 이메일입니다: %s", email)
+                ErrorCode.USER_DUPLICATION,
+                String.format("이미 존재하는 이메일입니다: %s", email)
         );
     }
 
@@ -69,6 +69,13 @@ public class UserException extends DomainException {
      */
     public static UserException invalidCredentials() {
         return new UserException(ErrorCode.INVALID_CREDENTIALS);
+    }
+
+    /**
+     * 로그인 실패 시 발생하는 예외 (커스텀 메시지)
+     */
+    public static UserException invalidCredentials(String message) {
+        return new UserException(ErrorCode.INVALID_CREDENTIALS, message);
     }
 
     /**
@@ -97,8 +104,15 @@ public class UserException extends DomainException {
      */
     public static UserException accessDenied(String resource) {
         return new UserException(
-            ErrorCode.ACCESS_DENIED,
-            String.format("%s에 대한 접근 권한이 없습니다", resource)
+                ErrorCode.ACCESS_DENIED,
+                String.format("%s에 대한 접근 권한이 없습니다", resource)
         );
+    }
+
+    /**
+     * 입력값이 잘못되었을 때 발생하는 예외 (ex: null 데이터 조회)
+     */
+    public static UserException invalidInput(String message) {
+        return new UserException(ErrorCode.INVALID_INPUT, message);
     }
 }

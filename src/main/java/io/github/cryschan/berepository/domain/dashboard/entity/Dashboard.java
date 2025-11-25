@@ -19,7 +19,7 @@ public class Dashboard {
     @Id
     private Long id;
 
-    private String adminUserId;         // 관리자(사용자) id
+    private Long adminUserId;         // 관리자(사용자) id
 
     private Integer activeUserCount;    // 활성 사용자 수
 
@@ -39,7 +39,7 @@ public class Dashboard {
     private LocalDateTime date;
 
     @Builder
-    public Dashboard(String adminUserId, Integer activeUserCount, Integer todayBlogCount, Integer totalBlogCount, String categoryDistribution, String platformUsage, String todayBlogList, LocalDateTime date) {
+    public Dashboard(Long adminUserId, Integer activeUserCount, Integer todayBlogCount, Integer totalBlogCount, String categoryDistribution, String platformUsage, String todayBlogList, LocalDateTime date) {
         this.adminUserId = adminUserId;
         this.activeUserCount = activeUserCount;
         this.todayBlogCount = todayBlogCount;
@@ -55,6 +55,7 @@ public class Dashboard {
      * 중복 저장 방지를 위해 기존 엔티티를 업데이트할 때 사용합니다.
      */
     public void updateData(
+            Long adminUserId,
             Integer activeUserCount,
             Integer todayBlogCount,
             Integer totalBlogCount,
@@ -62,6 +63,7 @@ public class Dashboard {
             String platformUsage,
             String todayBlogList
     ) {
+        this.adminUserId = adminUserId;
         this.activeUserCount = activeUserCount;
         this.todayBlogCount = todayBlogCount;
         this.totalBlogCount = totalBlogCount;
