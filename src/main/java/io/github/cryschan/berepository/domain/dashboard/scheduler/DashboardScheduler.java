@@ -30,7 +30,7 @@ public class DashboardScheduler {
         log.info("Starting daily dashboard update for date: {}", yesterday);
 
         try {
-            dashboardService.updateDashboardData(yesterday);
+            dashboardService.updateDashboardData(yesterday, null);
             log.info("Daily dashboard update completed successfully for date: {}", yesterday);
         } catch (Exception e) {
             log.error("Failed to update dashboard data for date: {}", yesterday, e);
