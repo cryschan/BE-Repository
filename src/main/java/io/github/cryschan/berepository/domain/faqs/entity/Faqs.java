@@ -31,7 +31,6 @@ public class Faqs {
 
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder;
-    //최신순 정렬로 변경
 
     //디폴트값으로 안됨
     @CreatedDate

@@ -16,7 +16,7 @@ public class FaqsService {
     private final FaqsRepository faqsRepository;
 
     public List<FaqsResponse> getFaqs() {
-        return faqsRepository.findAllByOrderByCreatedAtDesc()
+        return faqsRepository.findAllByOrderBySortOrderAsc()
                 .stream()
                 .map(FaqsResponse::from)
                 .toList();
