@@ -9,10 +9,8 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -51,8 +49,9 @@ public class MusinsaRankingCrawler {
 
             Iterator<JsonNode> amplitudeNodes = dataNode.findValues("amplitude").iterator();
             List<MusinsaRankingLinkDto> links = new ArrayList<>();
+            Set<String> seenUrls = new HashSet<>();  // 중복 URL 체크용
 
-            while (amplitudeNodes.hasNext() && links.size() < limit) {
+            while (amplitudeNodes.hasNext()) {
                 JsonNode amplitudeNode = amplitudeNodes.next();
                 JsonNode payload = amplitudeNode.path("payload");
                 if (!TARGET_SECTION_NAME.equals(payload.path("section_name").asText())) {
@@ -68,16 +67,27 @@ public class MusinsaRankingCrawler {
                     continue;
                 }
 
+                // 중복 URL 제거: 같은 URL이면 스킵
+                if (seenUrls.contains(url)) {
+                    log.debug("Skipping duplicate URL: {}", url);
+                    continue;
+                }
+
                 try {
                     int rank = Integer.parseInt(rankText);
                     links.add(new MusinsaRankingLinkDto(rank, url));
+                    seenUrls.add(url);  // 처리한 URL 기록
                 } catch (NumberFormatException e) {
                     log.debug("Skipping payload due to invalid rank: {}", rankText);
                 }
             }
 
+            // 랭킹 순으로 정렬 후 상위 N개만 반환
             links.sort(Comparator.comparingInt(MusinsaRankingLinkDto::rank));
-            return links.size() > limit ? links.subList(0, limit) : links;
+            List<MusinsaRankingLinkDto> result = links.size() > limit ? links.subList(0, limit) : links;
+
+            log.info("Fetched {} unique products from Musinsa ranking (requested: {})", result.size(), limit);
+            return result;
         } catch (Exception e) {
             log.error("Failed to parse Musinsa ranking API response", e);
             throw new IllegalStateException("Cannot parse Musinsa ranking", e);
