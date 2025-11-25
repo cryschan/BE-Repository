@@ -72,7 +72,7 @@ docs/
 개발 작업 기록 및 이슈 트래킹
 
 ### 2025-11
-- [User 예외 처리 리팩토링](tasks/2025-11/2025-11-23-user-exception-refactoring.md)
+- [User 예외 처리 리팩토링](tasks/2025-11/23/2025-11-23-user-exception-refactoring.md)
 - [User Profile 구현 계획](tasks/2025-11/user-profile-plan.md)
 
 [더 보기 →](tasks/README.md)

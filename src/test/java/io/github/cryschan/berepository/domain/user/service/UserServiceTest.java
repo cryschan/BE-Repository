@@ -7,8 +7,7 @@ import io.github.cryschan.berepository.domain.user.dto.response.LoginResponse;
 import io.github.cryschan.berepository.domain.user.dto.response.UserResponse;
 import io.github.cryschan.berepository.domain.user.entity.User;
 import io.github.cryschan.berepository.domain.user.entity.role.UserRole;
-import io.github.cryschan.berepository.domain.user.exception.DuplicationUserException;
-import io.github.cryschan.berepository.domain.user.exception.InvalidCredentialsException;
+import io.github.cryschan.berepository.domain.user.exception.UserException;
 import io.github.cryschan.berepository.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,7 +18,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
@@ -29,7 +27,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
+
 import org.mockito.Mockito;
+
 import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
@@ -131,7 +131,7 @@ class UserServiceTest {
 
             // when & then
             assertThatThrownBy(() -> userService.signup(signupRequest))
-                    .isInstanceOf(DuplicationUserException.class)
+                    .isInstanceOf(UserException.class)
                     .hasMessageContaining("test@example.com");
 
             // 검증: save 메서드가 호출되지 않았는지 확인
@@ -179,7 +179,7 @@ class UserServiceTest {
 
             // when & then
             assertThatThrownBy(() -> userService.login(loginRequest))
-                    .isInstanceOf(InvalidCredentialsException.class)
+                    .isInstanceOf(UserException.class)
                     .hasMessageContaining("test@example.com");
 
             // 검증
@@ -196,8 +196,8 @@ class UserServiceTest {
 
             // when & then
             assertThatThrownBy(() -> userService.login(loginRequest))
-                    .isInstanceOf(InvalidCredentialsException.class)
-                    .hasMessageContaining("test@example.com");
+                    .isInstanceOf(UserException.class)
+                    .hasMessageContaining("이메일 혹은 비밀번호가 일치하지 않습니다.");
 
             // 검증
             verify(userRepository).findByEmail("test@example.com");
@@ -217,7 +217,7 @@ class UserServiceTest {
 
             // when & then
             assertThatThrownBy(() -> userService.login(invalidRequest))
-                    .isInstanceOf(InvalidCredentialsException.class);
+                    .isInstanceOf(UserException.class);
 
             // 검증
             verify(userRepository).findByEmail("test@example.com");
@@ -276,7 +276,7 @@ class UserServiceTest {
 
             // 두 번째 회원가입: 실패
             assertThatThrownBy(() -> userService.signup(signupRequest))
-                    .isInstanceOf(DuplicationUserException.class);
+                    .isInstanceOf(UserException.class);
 
             // 검증
             verify(userRepository, times(2)).findByEmail("test@example.com");

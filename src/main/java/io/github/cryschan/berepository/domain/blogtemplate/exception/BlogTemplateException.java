@@ -94,4 +94,14 @@ public class BlogTemplateException extends DomainException {
     public static BlogTemplateException accessDenied(String message) {
         return new BlogTemplateException(ErrorCode.BLOG_TEMPLATE_ACCESS_DENIED, message);
     }
+
+    /**
+     * 이미지 옵션이 잘못되었을 때 발생하는 예외
+     */
+    public static BlogTemplateException invalidImageOptions(int imageCount, boolean includeImages) {
+        String message = includeImages
+                ? String.format("이미지 포함 시 imageCount는 1~10이어야 합니다. 현재 값: %d", imageCount)
+                : String.format("이미지 미포함 시 imageCount는 0이어야 합니다. 현재 값: %d", imageCount);
+        return new BlogTemplateException(ErrorCode.INVALID_INPUT, message);
+    }
 }
