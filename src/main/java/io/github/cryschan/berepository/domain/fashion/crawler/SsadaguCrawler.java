@@ -1,8 +1,11 @@
 package io.github.cryschan.berepository.domain.fashion.crawler;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.cryschan.berepository.domain.fashion.dto.response.SsadaguProductDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -12,6 +15,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -23,25 +27,17 @@ import java.util.Map;
 public class SsadaguCrawler {
 
     private static final String SSADAGU_BASE_URL = "https://ssadagu.kr";
+    private static final String SEARCH_API_URL = SSADAGU_BASE_URL + "/shop/ajax.infinity_shop_list.php";
     private static final String SEARCH_URL_PATTERN = SSADAGU_BASE_URL + "/shop/search.php?ss_tx=%s";
     private static final int TIMEOUT_MS = 10000;
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
-    // 카테고리별 대표 상품 URL (하드코딩)
-    // TODO: 추후 Selenium/Playwright로 실제 검색 기능 구현
-    // TODO: 실제 싸다구 상품 URL로 업데이트 필요 (현재는 구두 URL을 기본값으로 사용)
-    private static final Map<String, String> FALLBACK_PRODUCT_URLS = Map.ofEntries(
-            Map.entry("구두", "https://ssadagu.kr/shop/view.php?platform=1688&num_iid=688124293631"),
-            Map.entry("패딩", "https://ssadagu.kr/shop/view.php?platform=1688&num_iid=688124293631"),  // 구두로 대체
-            Map.entry("숏패딩", "https://ssadagu.kr/shop/view.php?platform=1688&num_iid=688124293631"),  // 구두로 대체
-            Map.entry("코트", "https://ssadagu.kr/shop/view.php?platform=1688&num_iid=688124293631")  // 구두로 대체
-    );
+    private final ObjectMapper objectMapper;
 
     /**
      * 카테고리로 상품을 검색하고 첫 번째 상품의 정보를 반환
      *
-     * NOTE: 싸다구 검색 페이지가 JavaScript 렌더링을 사용하여 Jsoup으로 크롤링 불가능.
-     * 현재는 하드코딩된 대표 상품 URL을 사용하며, 추후 Selenium/Playwright로 개선 예정.
+     * 싸다구 검색 API(/shop/ajax.infinity_shop_list.php)를 사용하여 실제 검색 기능 구현
      *
      * @param category 검색할 카테고리 (예: "숏패딩", "구두")
      * @return 첫 번째 상품 정보 (검색 결과가 없으면 null)
@@ -53,16 +49,15 @@ public class SsadaguCrawler {
         }
 
         try {
-            // 1단계: 폴백 URL 찾기 (하드코딩된 대표 상품)
-            String productUrl = findFallbackProductUrl(category);
+            // 1단계: 검색 API 호출
+            String productUrl = searchProductUrlViaApi(category);
 
             if (productUrl == null) {
-                log.warn("No fallback product URL found for category: {}. Trying generic search fallback.", category);
-                // 기본 대표 상품 사용 (구두)
-                productUrl = FALLBACK_PRODUCT_URLS.get("구두");
+                log.warn("No product found for category: {}", category);
+                return null;
             }
 
-            log.info("Using fallback product URL for category '{}': {}", category, productUrl);
+            log.info("Found product URL for category '{}': {}", category, productUrl);
 
             // 2단계: 상품 상세 페이지 방문
             log.debug("Fetching product detail from: {}", productUrl);
@@ -89,78 +84,123 @@ public class SsadaguCrawler {
     }
 
     /**
-     * 카테고리에 맞는 폴백 상품 URL 찾기
-     * 정확한 매칭이 없으면 부분 매칭 시도
+     * 싸다구 검색 API를 호출하여 첫 번째 상품 URL 반환
+     *
+     * @param keyword 검색 키워드
+     * @return 첫 번째 상품 URL (검색 결과가 없으면 null)
      */
-    private String findFallbackProductUrl(String category) {
-        // 1. 정확한 매칭
-        if (FALLBACK_PRODUCT_URLS.containsKey(category)) {
-            return FALLBACK_PRODUCT_URLS.get(category);
-        }
-
-        // 2. 부분 매칭 (예: "숏패딩/헤비 아우터" -> "숏패딩")
-        for (Map.Entry<String, String> entry : FALLBACK_PRODUCT_URLS.entrySet()) {
-            if (category.contains(entry.getKey())) {
-                log.debug("Found partial match: '{}' in category '{}'", entry.getKey(), category);
-                return entry.getValue();
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * 검색 결과 페이지에서 첫 번째 상품 URL 추출
-     */
-    private String extractFirstProductUrl(Document searchDoc) {
+    private String searchProductUrlViaApi(String keyword) {
         try {
-            // 1. view.php 링크 찾기 (싸다구 상품 페이지)
-            Elements viewLinks = searchDoc.select("a[href*='view.php']");
-            if (!viewLinks.isEmpty()) {
-                String href = viewLinks.first().attr("href");
-                log.debug("Found view.php link: {}", href);
-                return makeAbsoluteUrl(href);
+            String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
+
+            // 1단계: 먼저 검색 페이지를 방문해서 쿠키 받기 (세션 생성)
+            String searchPageUrl = String.format(SEARCH_URL_PATTERN, encodedKeyword);
+            log.debug("Step 1: Visiting search page to get session cookies: {}", searchPageUrl);
+
+            Map<String, String> cookies = Jsoup.connect(searchPageUrl)
+                    .userAgent(USER_AGENT)
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
+                    .header("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7")
+                    .timeout(TIMEOUT_MS)
+                    .execute()
+                    .cookies();
+
+            log.debug("Received {} cookies from search page", cookies.size());
+
+            // 2단계: 받은 쿠키와 함께 API 호출
+            String requestBody = String.format(
+                "page_div_id=infinity_item_list&page_type=pc&ss_tx=%s&page=1",
+                encodedKeyword
+            );
+
+            log.debug("Step 2: Calling Ssadagu search API with keyword: {}", keyword);
+
+            // API 호출 (쿠키 포함)
+            Connection.Response response = Jsoup.connect(SEARCH_API_URL)
+                    .userAgent(USER_AGENT)
+                    .header("Accept", "application/json, text/javascript, */*; q=0.01")
+                    .header("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7")
+                    .header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+                    .header("Origin", SSADAGU_BASE_URL)
+                    .header("Referer", searchPageUrl)
+                    .header("X-Requested-With", "XMLHttpRequest")  // AJAX 표시
+                    .cookies(cookies)  // 받은 쿠키 전달
+                    .requestBody(requestBody)
+                    .ignoreContentType(true)
+                    .maxBodySize(0)  // 바디 사이즈 제한 제거 (기본값 2MB)
+                    .timeout(TIMEOUT_MS)
+                    .method(Connection.Method.POST)
+                    .execute();
+
+            // JSON 응답 파싱 (인코딩 명시)
+            String jsonResponse = response.body();
+            log.debug("API Response (first 500 chars): {}", jsonResponse.substring(0, Math.min(500, jsonResponse.length())));
+
+            JsonNode root = objectMapper.readTree(jsonResponse);
+
+            if (!root.path("success").asBoolean()) {
+                log.warn("Ssadagu search API returned success=false for keyword: {}", keyword);
+                return null;
             }
 
-            // 2. data-num_iid 속성을 가진 요소에서 platform과 num_iid 추출
-            Elements dataElements = searchDoc.select("[data-num_iid], [data-platform]");
-            if (!dataElements.isEmpty()) {
-                for (Element elem : dataElements) {
-                    String numIid = elem.attr("data-num_iid");
-                    String platform = elem.attr("data-platform");
+            JsonNode dataArray = root.path("data");
+            if (dataArray.isMissingNode() || !dataArray.isArray() || dataArray.isEmpty()) {
+                log.warn("No search results from Ssadagu API for keyword: {}", keyword);
+                return null;
+            }
 
-                    if (!numIid.isBlank() && !platform.isBlank()) {
-                        String url = String.format("%s/shop/view.php?platform=%s&num_iid=%s",
-                                SSADAGU_BASE_URL, platform, numIid);
-                        log.debug("Constructed URL from data attributes: {}", url);
-                        return url;
-                    }
+            // 첫 번째 상품의 HTML에서 URL 추출 (JSON에서 이미 문자열로 되어 있음)
+            String firstProductHtml = dataArray.get(0).asText();
+            log.debug("First product HTML length: {}", firstProductHtml.length());
+            log.debug("First product HTML snippet: {}", firstProductHtml.substring(0, Math.min(300, firstProductHtml.length())));
+
+            // Jsoup으로 HTML 파싱
+            Document firstProduct = Jsoup.parse(firstProductHtml);
+
+            // a 태그 중 href에 view.php가 포함된 것 찾기
+            Elements allLinks = firstProduct.select("a");
+            log.debug("Found {} <a> tags in HTML", allLinks.size());
+
+            Element linkElement = null;
+            for (Element link : allLinks) {
+                String href = link.attr("href");
+                if (href.contains("view.php")) {
+                    linkElement = link;
+                    log.debug("Found link with href: {}", href);
+                    break;
                 }
             }
 
-            // 3. 기존 패턴들 시도
-            Elements productLinks = searchDoc.select(
-                    "a[href*='/shop/item.php'], " +
-                    "a[href*='/product/'], " +
-                    "a[href*='item.php?it_id'], " +
-                    "div.item a[href], " +
-                    "div.product a[href], " +
-                    "li.item a[href]"
-            );
-
-            if (!productLinks.isEmpty()) {
-                String href = productLinks.first().attr("href");
-                return makeAbsoluteUrl(href);
+            if (linkElement == null) {
+                log.warn("Failed to extract product URL from search result");
+                log.warn("HTML content: {}", firstProductHtml);
+                return null;
             }
 
-            log.debug("No product links found in search results");
-            return null;
+            String productUrl = linkElement.attr("href");
 
+            // 상대 URL을 절대 URL로 변환
+            if (!productUrl.startsWith("http")) {
+                if (productUrl.startsWith("/")) {
+                    productUrl = SSADAGU_BASE_URL + productUrl;
+                } else {
+                    productUrl = SSADAGU_BASE_URL + "/" + productUrl;
+                }
+            }
+
+            log.info("Successfully extracted product URL: {}", productUrl);
+
+            return productUrl;
+
+        } catch (IOException e) {
+            log.error("Failed to call Ssadagu search API for keyword: {}", keyword, e);
+            return null;
         } catch (Exception e) {
-            log.error("Failed to extract first product URL", e);
+            log.error("Unexpected error while searching Ssadagu for keyword: {}", keyword, e);
             return null;
         }
     }
+
 
     /**
      * 상품 상세 페이지에서 상품 정보 추출
@@ -183,6 +223,9 @@ public class SsadaguCrawler {
             // 이미지 URL 추출
             String imageUrl = extractImageUrl(doc);
 
+            // 상품 정보 추출
+            Map<String, String> productAttributes = extractProductAttributes(doc);
+
             // 리뷰 수는 현재 HTML에서 확인 불가 (null로 설정)
             Integer reviewCount = null;
 
@@ -196,6 +239,7 @@ public class SsadaguCrawler {
                     .reviewCount(reviewCount)
                     .imageUrl(imageUrl)
                     .category(category)
+                    .productAttributes(productAttributes)
                     .build();
 
         } catch (Exception e) {
@@ -342,23 +386,54 @@ public class SsadaguCrawler {
     }
 
     /**
-     * 상대 URL을 절대 URL로 변환
+     * 상품 정보 추출
+     * 셀렉터: div.pro-info-boxs > div.pro-info-item
+     * 각 항목에서 제목(pro-info-title)과 내용(pro-info-info) 추출
      */
-    private String makeAbsoluteUrl(String url) {
-        if (url == null || url.isBlank()) {
-            return null;
+    private Map<String, String> extractProductAttributes(Document doc) {
+        Map<String, String> attributes = new LinkedHashMap<>();
+
+        try {
+            // 여러 가능한 셀렉터 시도
+            Element attributesBox = doc.selectFirst("div.pro-info-boxs#productAttributes");
+
+            if (attributesBox == null) {
+                log.warn("Product attributes container #productAttributes not found, trying alternative selectors");
+
+                // 대안 1: ID 없이 클래스만
+                attributesBox = doc.selectFirst("div.pro-info-boxs");
+
+                if (attributesBox == null) {
+                    log.warn("Product attributes container .pro-info-boxs also not found");
+                    return attributes;
+                }
+            }
+
+            Elements items = attributesBox.select("div.pro-info-item");
+            log.info("Found {} product attribute items", items.size());
+
+            for (Element item : items) {
+                // hidden 클래스가 있는 항목도 포함 (모든 정보 수집)
+                Element titleElement = item.selectFirst("div.pro-info-title");
+                Element infoElement = item.selectFirst("div.pro-info-info");
+
+                if (titleElement != null && infoElement != null) {
+                    String title = titleElement.text().trim();
+                    String info = infoElement.text().trim();
+
+                    if (!title.isBlank() && !info.isBlank()) {
+                        attributes.put(title, info);
+                        log.info("Added attribute: {} = {}", title, info);
+                    }
+                }
+            }
+
+            log.info("Successfully extracted {} product attributes", attributes.size());
+
+        } catch (Exception e) {
+            log.error("Failed to extract product attributes", e);
         }
 
-        // 이미 절대 URL인 경우
-        if (url.startsWith("http://") || url.startsWith("https://")) {
-            return url;
-        }
-
-        // 상대 URL을 절대 URL로 변환
-        if (url.startsWith("/")) {
-            return SSADAGU_BASE_URL + url;
-        } else {
-            return SSADAGU_BASE_URL + "/" + url;
-        }
+        return attributes;
     }
 }
