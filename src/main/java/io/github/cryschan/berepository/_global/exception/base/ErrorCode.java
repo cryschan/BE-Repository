@@ -2,6 +2,10 @@ package io.github.cryschan.berepository._global.exception.base;
 
 import org.springframework.http.HttpStatus;
 
+/**
+ * 애플리케이션 전역 에러 코드를 정의하는 열거형
+ * 도메인별로 에러 코드를 분류하여 관리합니다.
+ */
 public enum ErrorCode {
 
     // ==================== User 도메인 (U로 시작) ====================
@@ -10,6 +14,11 @@ public enum ErrorCode {
     INVALID_CREDENTIALS("U003", "이메일 혹은 비밀번호가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED("U004", "인증이 필요합니다", HttpStatus.UNAUTHORIZED),
     ACCESS_DENIED("U005", "접근 권한이 없습니다", HttpStatus.FORBIDDEN),
+
+    // ==================== Token 도메인 (T로 시작) ====================
+    INVALID_TOKEN("T001", "유효하지 않은 토큰입니다", HttpStatus.UNAUTHORIZED),
+    EXPIRED_TOKEN("T002", "만료된 토큰입니다", HttpStatus.UNAUTHORIZED),
+    TOKEN_NOT_FOUND("T003", "토큰을 찾을 수 없습니다", HttpStatus.NOT_FOUND),
 
     // ==================== Board 도메인 (B로 시작) ====================
     BOARD_NOT_FOUND("B001", "게시글을 찾을 수 없습니다", HttpStatus.NOT_FOUND),
