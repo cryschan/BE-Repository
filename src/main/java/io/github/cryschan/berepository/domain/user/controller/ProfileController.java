@@ -227,14 +227,20 @@ public class ProfileController {
                             examples = @ExampleObject(
                                     value = """
                                             {
-                                                "message": "입력값이 올바르지 않습니다",
+                                                "message": "이름은 필수입니다, 부서명은 필수입니다",
                                                 "status": 400,
-                                                "code": "V001",
+                                                "code": "C001",
                                                 "timestamp": "2024-11-25T10:30:45.123456",
-                                                "errors": {
-                                                    "username": "이름은 필수입니다",
-                                                    "department": "부서명은 필수입니다"
-                                                }
+                                                "errors": [
+                                                    {
+                                                        "field": "username",
+                                                        "message": "이름은 필수입니다"
+                                                    },
+                                                    {
+                                                        "field": "department",
+                                                        "message": "부서명은 필수입니다"
+                                                    }
+                                                ]
                                             }
                                             """
                             )

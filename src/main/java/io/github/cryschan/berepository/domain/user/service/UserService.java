@@ -14,6 +14,7 @@ import io.github.cryschan.berepository.domain.user.exception.UserException;
 import io.github.cryschan.berepository.domain.user.repository.TokenRepository;
 import io.github.cryschan.berepository.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 사용자 인증 서비스
  * 회원가입, 로그인, 로그아웃, 토큰 갱신 등 인증 관련 비즈니스 로직을 처리합니다.
  */
+@Slf4j
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Service
@@ -92,6 +94,8 @@ public class UserService {
     // 토큰 갱신
     @Transactional(readOnly = true)
     public TokenRefreshResponse refresh(RefreshTokenRequest request) {
+
+        log.debug("========= 토큰 갱신 시작 =========");
         // 요청에서 refresh token 추출
         String token = request.refreshToken();
 
@@ -115,6 +119,7 @@ public class UserService {
         // 새로운 access token 생성
         String newAccessToken = jwtUtil.generateAccessToken(userId);
 
+        log.debug("========= 토큰 갱신 완료 =========");
         // 새 access token 반환
         return new TokenRefreshResponse(newAccessToken);
     }

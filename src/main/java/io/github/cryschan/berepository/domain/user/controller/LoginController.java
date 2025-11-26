@@ -56,14 +56,13 @@ public class LoginController {
                             examples = @ExampleObject(
                                     value = """
                                             {
-                                                "message": "입력값이 올바르지 않습니다",
+                                                "message": "이메일은 필수입니다",
                                                 "status": 400,
                                                 "code": "C001",
                                                 "timestamp": "2024-11-24T14:30:45.123456",
                                                 "errors": [
                                                     {
                                                         "field": "email",
-                                                        "rejectedValue": "",
                                                         "message": "이메일은 필수입니다"
                                                     }
                                                 ]
@@ -136,14 +135,13 @@ public class LoginController {
                             examples = @ExampleObject(
                                     value = """
                                             {
-                                                "message": "입력값이 올바르지 않습니다",
+                                                "message": "이메일 형식이 올바르지 않습니다",
                                                 "status": 400,
                                                 "code": "C001",
                                                 "timestamp": "2024-11-24T14:30:45.123456",
                                                 "errors": [
                                                     {
                                                         "field": "email",
-                                                        "rejectedValue": "invalid-email",
                                                         "message": "이메일 형식이 올바르지 않습니다"
                                                     }
                                                 ]
@@ -201,14 +199,13 @@ public class LoginController {
                             examples = @ExampleObject(
                                     value = """
                                             {
-                                                "message": "입력값이 올바르지 않습니다",
+                                                "message": "리프레시 토큰은 필수입니다",
                                                 "status": 400,
                                                 "code": "C001",
                                                 "timestamp": "2024-11-24T14:30:45.123456",
                                                 "errors": [
                                                     {
                                                         "field": "refreshToken",
-                                                        "rejectedValue": "",
                                                         "message": "리프레시 토큰은 필수입니다"
                                                     }
                                                 ]
@@ -296,14 +293,13 @@ public class LoginController {
                             examples = @ExampleObject(
                                     value = """
                                             {
-                                                "message": "입력값이 올바르지 않습니다",
+                                                "message": "리프레시 토큰은 필수입니다",
                                                 "status": 400,
                                                 "code": "C001",
                                                 "timestamp": "2024-11-24T14:30:45.123456",
                                                 "errors": [
                                                     {
                                                         "field": "refreshToken",
-                                                        "rejectedValue": "",
                                                         "message": "리프레시 토큰은 필수입니다"
                                                     }
                                                 ]

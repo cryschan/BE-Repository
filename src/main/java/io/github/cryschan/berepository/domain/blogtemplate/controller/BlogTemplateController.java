@@ -61,14 +61,13 @@ public class BlogTemplateController {
                             examples = @ExampleObject(
                                     value = """
                                             {
-                                                "message": "입력값이 올바르지 않습니다",
+                                                "message": "카테고리는 필수입니다",
                                                 "status": 400,
                                                 "code": "C001",
                                                 "timestamp": "2024-11-24T14:30:45.123456",
                                                 "errors": [
                                                     {
                                                         "field": "categories",
-                                                        "rejectedValue": null,
                                                         "message": "카테고리는 필수입니다"
                                                     }
                                                 ]
@@ -582,14 +581,13 @@ public class BlogTemplateController {
                             examples = @ExampleObject(
                                     value = """
                                             {
-                                                "message": "입력값이 올바르지 않습니다",
+                                                "message": "유효하지 않은 시간 형식입니다",
                                                 "status": 400,
                                                 "code": "C001",
                                                 "timestamp": "2024-11-24T14:30:45.123456",
                                                 "errors": [
                                                     {
                                                         "field": "time",
-                                                        "rejectedValue": "25:00:00",
                                                         "message": "유효하지 않은 시간 형식입니다"
                                                     }
                                                 ]
