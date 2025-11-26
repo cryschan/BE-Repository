@@ -25,8 +25,11 @@ public record LoginResponse(
         @Schema(description = "사용자 권한", example = "USER")
         UserRole role,
 
-        @Schema(description = "JWT 액세스 토큰", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
-        String token
+        @Schema(description = "JWT 액세스 토큰", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwidHlwZSI6ImFjY2VzcyJ9.xxxxx")
+        String accessToken,
+
+        @Schema(description = "JWT 리프레시 토큰", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwidHlwZSI6InJlZnJlc2gifQ.xxxxx")
+        String refreshToken
 ) {
 
     /**
@@ -36,14 +39,15 @@ public record LoginResponse(
      * @param token JWT 토큰
      * @return LoginResponse DTO
      */
-    public static LoginResponse from(User user, String token) {
+    public static LoginResponse from(User user, String accessToken, String refreshToken) {
         return new LoginResponse(
                 user.getUserId(),
                 user.getEmail(),
                 user.getUsername(),
                 user.getCreatedAt(),
                 user.getRole(),
-                token
+                accessToken,
+                refreshToken
         );
     }
 }

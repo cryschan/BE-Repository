@@ -1,6 +1,5 @@
 package io.github.cryschan.berepository._global.jwt;
 
-import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -60,26 +59,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             String token = authHeader.substring(7); // "Bearer " 제거 (7자)
 
-            try {
+            // 2. 토큰 검증
+            if (jwtUtil.validateToken(token)) {
+                // 3. userId 추출
+                Long userId = jwtUtil.getUserId(token);
 
-                // 2. 토큰 검증 및 userId 추출
-                Claims claims = jwtUtil.validateToken(token);
-                Long userId = claims.get("userId", Long.class);
-
-                // 3. Spring Security 인증 객체 생성
+                // 4. Spring Security 인증 객체 생성
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userId,
                         null,
                         new ArrayList<>()
                 );
 
-                // 4. SecurityContext에 저장
+                // 5. SecurityContext에 저장
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            } catch (Exception e) {
-                // 토큰 검증 실패 (만료, 위조... etc)
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                return;
             }
         }
 
