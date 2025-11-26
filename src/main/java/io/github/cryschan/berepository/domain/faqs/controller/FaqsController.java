@@ -30,10 +30,6 @@ public class FaqsController {
                     schema = @Schema(implementation = FaqsResponse.class),
                     examples = {
                             @ExampleObject(
-                                    name = "빈 리스트",
-                                    value = "[]"
-                            ),
-                            @ExampleObject(
                                     name = "FAQ 리스트",
                                     value = """
                                             [
