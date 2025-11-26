@@ -1,5 +1,6 @@
 package io.github.cryschan.berepository.domain.blogtemplate.entity;
 
+import io.github.cryschan.berepository.domain.blogtemplate.exception.BlogTemplateException;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -11,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,7 +29,12 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Entity
-@Table(name = "blog_templates")
+@Table(
+        name = "blog_templates",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_blog_templates_user_id", columnNames = "user_id")
+        }
+)
 public class BlogTemplate {
 
     @Id
@@ -89,7 +96,10 @@ public class BlogTemplate {
 
     public void updateImageOptions(boolean includeImages, int imageCount) {
         if (includeImages && (imageCount < 1 || imageCount > 10)) {
-            throw new IllegalArgumentException("imageCount must be between 1 and 10 when images are included.");
+            throw BlogTemplateException.invalidImageOptions(imageCount, true);
+        }
+        if (!includeImages && imageCount != 0) {
+            throw BlogTemplateException.invalidImageOptions(imageCount, false);
         }
         this.includeImages = includeImages;
         this.imageCount = includeImages ? imageCount : 0;
@@ -106,10 +116,12 @@ public class BlogTemplate {
             LocalTime dailyPostTime
     ) {
         this.title = title;
+        List<String> safeCategories = categories == null ? List.of() : new ArrayList<>(categories);
+        List<String> safePlatforms = platforms == null ? List.of() : new ArrayList<>(platforms);
         this.categories.clear();
-        this.categories.addAll(categories);
+        this.categories.addAll(safeCategories);
         this.platforms.clear();
-        this.platforms.addAll(platforms);
+        this.platforms.addAll(safePlatforms);
         this.shopUrl = shopUrl;
         updateImageOptions(includeImages, imageCount);
         this.charLimit = charLimit;

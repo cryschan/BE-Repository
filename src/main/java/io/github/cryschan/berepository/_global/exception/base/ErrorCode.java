@@ -33,6 +33,13 @@ public enum ErrorCode {
     BLOG_TEMPLATE_ACCESS_DENIED("BT002", "블로그 템플릿에 대한 권한이 없습니다", HttpStatus.FORBIDDEN),
     BLOG_TEMPLATE_ALREADY_EXISTS("BT003", "이미 블로그 템플릿이 존재합니다", HttpStatus.CONFLICT),
 
+    // ==================== Blog 도메인 (BL로 시작) ====================
+    BLOG_NOT_FOUND("BL001", "블로그를 찾을 수 없습니다", HttpStatus.NOT_FOUND),
+    INVALID_PAGE_NUMBER("BL002", "페이지 번호는 1 이상이어야 합니다", HttpStatus.BAD_REQUEST),
+    INVALID_BLOG_ID("BL003", "유효하지 않은 블로그 ID입니다", HttpStatus.BAD_REQUEST),
+    INVALID_BLOG_REQUEST("BL004", "잘못된 블로그 요청입니다", HttpStatus.BAD_REQUEST),
+    BLOG_ACCESS_DENIED("BL005", "이 블로그에 접근할 권한이 없습니다", HttpStatus.FORBIDDEN),
+
     // ==================== 공통 (C로 시작) ====================
     INVALID_INPUT("C001", "입력값이 올바르지 않습니다", HttpStatus.BAD_REQUEST),
     INVALID_REQUEST("C002", "잘못된 요청입니다", HttpStatus.BAD_REQUEST),

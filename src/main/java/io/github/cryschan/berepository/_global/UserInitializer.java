@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Order(1)
 @Component
+@Order(1)
 public class UserInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
