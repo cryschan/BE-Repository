@@ -12,5 +12,6 @@ public class TodayBlogItem {
     private String title;
     private String platform;
     private LocalDateTime createdAt;
+    private String username;  // 템플릿 생성자 username
 
 }

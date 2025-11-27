@@ -10,6 +10,7 @@ import io.github.cryschan.berepository.domain.dashboard.dto.DashboardResponse;
 import io.github.cryschan.berepository.domain.dashboard.dto.TodayBlogItem;
 import io.github.cryschan.berepository.domain.dashboard.entity.Dashboard;
 import io.github.cryschan.berepository.domain.dashboard.repository.DashboardRepository;
+import io.github.cryschan.berepository.domain.user.entity.User;
 import io.github.cryschan.berepository.domain.user.entity.role.UserRole;
 import io.github.cryschan.berepository.domain.user.exception.UserException;
 import io.github.cryschan.berepository.domain.user.repository.UserRepository;
@@ -69,10 +70,13 @@ public class DashboardService {
     private DashboardData calculateDashboardData(LocalDateTime date) {
         // 해당 날짜의 시작과 끝 시간 계산
         LocalDateTime startOfDay = date.toLocalDate().atStartOfDay();
-        LocalDateTime endOfDay = date.toLocalDate().atTime(23, 59, 59, 999999999);
+        // 다음 날 00:00:00 이전까지 포함 (더 정확한 범위 계산)
+        LocalDateTime endOfDay = date.toLocalDate().plusDays(1).atStartOfDay().minusNanos(1);
 
         // 템플릿을 한 번만 조회하여 재사용 (중복 호출 방지)
         Map<Long, BlogTemplate> templateMap = getTemplateMap();
+        // 사용자 정보를 한 번만 조회하여 재사용 (중복 호출 방지)
+        Map<Long, String> userMap = getUserMap();
 
         // 1) 해당 날짜에 작성된 글 수
         Integer todayBlogCount = blogRepository.countByCreatedAtBetween(startOfDay, endOfDay);
@@ -89,7 +93,7 @@ public class DashboardService {
         calculateDistributionAndUsage(categoryDistribution, platformUsage, templateMap);
 
         // 5) 해당 날짜에 작성된 글 리스트
-        List<TodayBlogItem> todayBlogItemList = getTodayBlogList(startOfDay, endOfDay, templateMap);
+        List<TodayBlogItem> todayBlogItemList = getTodayBlogList(startOfDay, endOfDay, templateMap, userMap);
 
         // 6) 사용한 토큰 수 (전체 사용자의 토큰 사용량 합계)
         Long totalTokenUsage = getTotalTokenUsage();
@@ -148,7 +152,8 @@ public class DashboardService {
     private List<TodayBlogItem> getTodayBlogList(
             LocalDateTime start,
             LocalDateTime end,
-            Map<Long, BlogTemplate> templateMap
+            Map<Long, BlogTemplate> templateMap,
+            Map<Long, String> userMap
     ) {
         List<Blog> blogs = blogRepository.findAllByCreatedAtBetween(start, end);
 
@@ -159,10 +164,14 @@ public class DashboardService {
                     if (!template.getPlatforms().isEmpty()) {
                         platform = template.getPlatforms().get(0);
                     }
+
+                    // 템플릿 생성자의 username 조회
+                    String username = userMap.getOrDefault(template.getUserId(), "Unknown");
                     return new TodayBlogItem(
                             blog.getTitle(),
                             platform,
-                            blog.getCreatedAt()
+                            blog.getCreatedAt(),
+                            username
                     );
                 })
                 .collect(Collectors.toList());
@@ -178,6 +187,17 @@ public class DashboardService {
                 ));
     }
 
+
+    /* 사용자 정보를 Map으로 조회하여 캐싱 */
+    private Map<Long, String> getUserMap() {
+        return userRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        User::getUserId,
+                        user -> user.getUsername() != null ? user.getUsername() : "Unknown",
+                        (existing, replacement) -> existing  // 중복 키 발생 시 기존 값 유지
+                ));
+    }
+    
     /* Blog에서 템플릿 조회 (공통 로직) */
     private BlogTemplate getTemplateFromBlog(Blog blog, Map<Long, BlogTemplate> templateMap) {
         Long templateId = blog.getBlogTemplateId();
