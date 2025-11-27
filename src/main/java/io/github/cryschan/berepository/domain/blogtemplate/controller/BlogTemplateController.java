@@ -325,7 +325,7 @@ public class BlogTemplateController {
                     )
             )
     })
-    @GetMapping("/{templateId}")
+    @GetMapping("/{templateId:\\d+}")
     public BlogTemplateResponse getTemplate(@PathVariable Long templateId, Principal principal) {
         Long requesterId = extractUserId(principal);
         return blogTemplateService.getTemplateResponseForAdmin(requesterId, templateId);
