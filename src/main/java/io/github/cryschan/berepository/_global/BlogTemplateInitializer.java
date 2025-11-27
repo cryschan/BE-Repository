@@ -28,9 +28,6 @@ public class BlogTemplateInitializer implements CommandLineRunner {
     private final BlogTemplateRepository blogTemplateRepository;
     private final UserRepository userRepository;
 
-    @Value("${init.admin.email}")
-    private String adminEmail;
-
     @Value("${init.user.email}")
     private String userEmail;
 
@@ -42,7 +39,6 @@ public class BlogTemplateInitializer implements CommandLineRunner {
         log.info("=".repeat(80));
 
         try {
-            createAdminTemplateIfNotExists();
             createUserTemplateIfNotExists();
 
             log.info("=".repeat(80));
@@ -54,42 +50,6 @@ public class BlogTemplateInitializer implements CommandLineRunner {
             log.error("=".repeat(80));
             throw e;
         }
-    }
-
-    private void createAdminTemplateIfNotExists() {
-        log.debug("Checking if Admin's BlogTemplate exists...");
-
-        User admin = userRepository.findByEmail(adminEmail)
-                .orElseThrow(() -> new IllegalStateException("Admin user must exist before creating template"));
-
-        if (blogTemplateRepository.findByUserId(admin.getUserId()).isPresent()) {
-            log.info("[SKIP] Admin's BlogTemplate already exists");
-            return;
-        }
-
-        log.debug("Admin's BlogTemplate does not exist. Creating...");
-
-        BlogTemplate adminTemplate = BlogTemplate.builder()
-                .userId(admin.getUserId())
-                .title("System Admin의 템플릿")
-                .categories(List.of("상의", "하의", "아우터"))
-                .platforms(List.of("Tistory"))
-                .shopUrl("https://www.musinsa.com")
-                .includeImages(true)
-                .imageCount(3)
-                .charLimit(1000)
-                .dailyPostTime(LocalTime.of(9, 0, 0))
-                .build();
-
-        BlogTemplate saved = blogTemplateRepository.save(adminTemplate);
-
-        log.info("[CREATED] Admin's BlogTemplate successfully created");
-        log.debug("  - Template ID: {}", saved.getId());
-        log.debug("  - User ID: {}", saved.getUserId());
-        log.debug("  - Title: {}", saved.getTitle());
-        log.debug("  - Categories: {}", saved.getCategories());
-        log.debug("  - Platforms: {}", saved.getPlatforms());
-        log.debug("  - Daily Post Time: {}", saved.getDailyPostTime());
     }
 
     private void createUserTemplateIfNotExists() {

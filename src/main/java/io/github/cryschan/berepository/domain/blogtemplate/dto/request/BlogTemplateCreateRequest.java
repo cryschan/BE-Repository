@@ -51,7 +51,7 @@ public record BlogTemplateCreateRequest(
         LocalTime dailyPostTime
 ) {
 
-    @AssertTrue(message = "imageCount must be 1~10 when includeImages is true, otherwise 0")
+    @AssertTrue(message = "이미지 포함 시 imageCount는 1~10이어야 하며, 미포함 시 0이어야 합니다")
     public boolean isValidImageCount() {
         if (Boolean.TRUE.equals(includeImages)) {
             return imageCount >= 1 && imageCount <= 10;
@@ -59,12 +59,12 @@ public record BlogTemplateCreateRequest(
         return imageCount == 0;
     }
 
-    @AssertTrue(message = "charLimit must be a positive multiple of 500 (e.g., 500, 1000, 1500)")
+    @AssertTrue(message = "글자 수 제한은 500의 양수 배수여야 합니다 (예: 500, 1000, 1500)")
     public boolean isValidCharLimit() {
         return charLimit > 0 && charLimit % 500 == 0;
     }
 
-    @AssertTrue(message = "dailyPostTime must be on the hour (minute/second/nano = 0)")
+    @AssertTrue(message = "포스팅 시간은 정각이어야 합니다 (분/초는 0)")
     public boolean isValidDailyPostTime() {
         return dailyPostTime != null
                 && dailyPostTime.getMinute() == 0

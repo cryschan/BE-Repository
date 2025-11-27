@@ -1,5 +1,6 @@
 package io.github.cryschan.berepository.domain.user.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.github.cryschan.berepository.domain.user.entity.User;
 import io.github.cryschan.berepository.domain.user.entity.role.UserRole;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -31,9 +32,11 @@ public record UserDetailResponse(
         Long tokenUsage,
 
         @Schema(description = "계정 생성일시", example = "2024-01-01T10:00:00")
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime createdAt,
 
         @Schema(description = "최종 수정일시", example = "2024-01-15T14:30:00")
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime updatedAt
 ) {
     /**

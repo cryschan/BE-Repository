@@ -1,5 +1,6 @@
 package io.github.cryschan.berepository.domain.user.service;
 
+import io.github.cryschan.berepository.domain.user.dto.request.UpdateProfileRequest;
 import io.github.cryschan.berepository.domain.user.dto.response.UserDetailResponse;
 import io.github.cryschan.berepository.domain.user.entity.User;
 import io.github.cryschan.berepository.domain.user.entity.role.UserRole;
@@ -9,6 +10,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 사용자 프로필 서비스
+ * 마이페이지 조회, 수정 등 프로필 관련 비즈니스 로직을 처리합니다.
+ */
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
@@ -48,5 +53,25 @@ public class UserProfileService {
                 .orElseThrow(() -> UserException.notFound(targetUserId));
 
         return UserDetailResponse.from(targetUser);
+    }
+
+    // 사용자 프로필 업데이트
+    @Transactional
+    public UserDetailResponse updateMyProfile(Long userId, UpdateProfileRequest request) {
+
+        // userId가 null인경우
+        if (userId == null) {
+            throw UserException.notFound("userId cannot be null");
+        }
+
+        // 유저 조회
+        User updateUser = userRepository.findById(userId)
+                .orElseThrow(() -> UserException.notFound(userId));
+
+        // 유저 데이터 업데이트
+        updateUser.updateProfile(request.username(), request.department());
+
+        // entity -> dto
+        return UserDetailResponse.from(updateUser);
     }
 }

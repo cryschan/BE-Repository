@@ -64,13 +64,11 @@ public record ErrorResponse(
     /**
      * 입력값 검증 실패 시 필드별 오류 정보를 담는 DTO입니다.
      *
-     * @param field         오류가 발생한 필드명
-     * @param rejectedValue 거부된 입력값
-     * @param message       오류 메시지
+     * @param field   오류가 발생한 필드명
+     * @param message 오류 메시지
      */
     public record FieldError(
             String field,
-            String rejectedValue,
             String message
     ) {
     }

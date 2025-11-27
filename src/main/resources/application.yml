@@ -5,15 +5,15 @@ spring:
     import: optional:file:.env[.properties]
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:test_db}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: ${DDL_AUTO:update}
-    show-sql: ${SHOW_SQL:true}
+      ddl-auto: ${DDL_AUTO}
+    show-sql: ${SHOW_SQL}
     properties:
       hibernate:
         format_sql: true
@@ -25,11 +25,11 @@ spring:
       api-key: ${OPENAI_API_KEY}
       chat:
         options:
-          model: ${OPENAI_MODEL:gpt-3.5-turbo}
-          temperature: ${OPENAI_TEMPERATURE:0.7}
+          model: ${OPENAI_MODEL}
+          temperature: ${OPENAI_TEMPERATURE}
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT}
 
 # Swagger 간단 설정
 springdoc:
@@ -38,12 +38,12 @@ springdoc:
 
 logging:
   level:
-    io.github.cryschan.berepository: ${LOG_LEVEL:DEBUG}
+    io.github.cryschan.berepository: ${LOG_LEVEL}
 
 jwt:
   secret: ${JWT_SECRET:default-secret-key-for-development-only-change-in-production}  # 환경변수에서 읽기
-  access-token-expiration: ${JWT_ACCESS_EXPIRATION:3600000}  # 1시간 (밀리초)
-  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}  # 7일 (밀리초)
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION}  # 1시간 (밀리초)
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION}  # 7일 (밀리초)
 
 # AWS S3
 cloud:
