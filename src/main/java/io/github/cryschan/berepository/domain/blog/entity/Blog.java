@@ -28,9 +28,6 @@ public class Blog {
     @Column(nullable = false)
     private String title;
 
-    @Column(name = "img_url")
-    private String imgUrl;
-
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
@@ -49,11 +46,10 @@ public class Blog {
     private Long userId;
 
     @Builder
-    public Blog(Long blogTemplateId, String title, String imgUrl,
+    public Blog(Long blogTemplateId, String title,
                 String content, String category, Long userId) {
         this.blogTemplateId = blogTemplateId;
         this.title = title;
-        this.imgUrl = imgUrl;
         this.content = content;
         this.category = category;
         this.userId = userId;
@@ -67,15 +63,18 @@ public class Blog {
         this.content = content;
     }
 
-    public void updateImgUrl(String imgUrl) {
-        this.imgUrl = imgUrl;
-    }
-
     public void updateBlogTemplate(Long blogTemplateId) {
         this.blogTemplateId = blogTemplateId;
     }
 
     public void updateCategory(String category) {
         this.category = category;
+    }
+
+    public void update(String title, String content, String category, Long blogTemplateId) {
+        this.title = title;
+        this.content = content;
+        this.category = category;
+        this.blogTemplateId = blogTemplateId;
     }
 }

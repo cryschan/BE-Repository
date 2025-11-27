@@ -45,6 +45,17 @@ jwt:
   access-token-expiration: ${JWT_ACCESS_EXPIRATION:3600000}  # 1시간 (밀리초)
   refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}  # 7일 (밀리초)
 
+# AWS S3
+cloud:
+  aws:
+    s3:
+      bucket: fastcampus-finalproject-bucket
+    region:
+      static: ap-northeast-2
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID}
+      secret-key: ${AWS_SECRET_ACCESS_KEY}
+
 # Initial Data Configuration
 init:
   admin:

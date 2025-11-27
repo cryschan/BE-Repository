@@ -55,9 +55,8 @@ public class BlogInitializer implements CommandLineRunner {
         createBlog(
                 1L,
                 "여름 남성 반팔 티셔츠 추천 - 시원하고 스타일리시한",
-                "https://example.com/images/tshirt.jpg",
                 "# 여름 남성 반팔 티셔츠 추천\n\n여름철 필수 아이템인 반팔 티셔츠를 소개합니다...",
-                "남성 의류",
+                "상의",
                 1L
         );
 
@@ -65,9 +64,8 @@ public class BlogInitializer implements CommandLineRunner {
         createBlog(
                 1L,
                 "메이크업 초보자를 위한 베이스 메이크업 제품 가이드",
-                "https://example.com/images/makeup.jpg",
                 "# 베이스 메이크업 가이드\n\n초보자도 쉽게 따라할 수 있는 베이스 메이크업...",
-                "메이크업 제품",
+                "ACC",
                 2L
         );
 
@@ -75,7 +73,6 @@ public class BlogInitializer implements CommandLineRunner {
         createBlog(
                 2L,
                 "편안한 운동화 추천 - 일상에서 신기 좋은",
-                "https://example.com/images/sneakers.jpg",
                 "# 운동화 추천\n\n일상생활에서 편하게 신을 수 있는 운동화를 추천합니다...",
                 "신발",
                 1L
@@ -85,9 +82,8 @@ public class BlogInitializer implements CommandLineRunner {
         createBlog(
                 1L,
                 "겨울 패딩 추천 - 따뜻하고 가벼운",
-                "https://example.com/images/padding.jpg",
                 "# 겨울 패딩 추천\n\n가볍고 따뜻한 겨울 패딩을 소개합니다...",
-                "여성 의류",
+                "아우터",
                 2L
         );
 
@@ -95,39 +91,35 @@ public class BlogInitializer implements CommandLineRunner {
         createBlog(
                 2L,
                 "스킨케어 루틴 완벽 가이드",
-                "https://example.com/images/skincare.jpg",
                 "# 스킨케어 루틴\n\n올바른 스킨케어 순서와 제품 추천...",
-                "메이크업 제품",
+                "ACC",
                 1L
         );
 
-        // 6. 홈 인테리어 소품 추천
+        // 6. 데님 팬츠 스타일링 가이드
         createBlog(
                 1L,
-                "홈 인테리어 소품 추천",
-                "https://example.com/images/interior.jpg",
-                "# 인테리어 소품\n\n집을 더 아늑하게 만들어줄 소품들...",
-                "생활용품",
+                "데님 팬츠 스타일링 가이드",
+                "# 데님 팬츠 스타일링\n\n다양한 데님 팬츠 코디법을 소개합니다...",
+                "하의",
                 2L
         );
 
-        // 7. 최신 노트북 비교 리뷰
+        // 7. 가을 자켓 추천
         createBlog(
                 2L,
-                "최신 노트북 비교 리뷰",
-                "https://example.com/images/laptop.jpg",
-                "# 노트북 리뷰\n\n2024년 최신 노트북 비교 분석...",
-                "전자제품",
+                "가을 자켓 추천 - 트렌디한 아우터",
+                "# 가을 자켓 추천\n\n2024년 가을 트렌드 자켓을 소개합니다...",
+                "아우터",
                 1L
         );
 
-        // 8. 건강한 간식 추천
+        // 8. 여름 린넨 셔츠 추천
         createBlog(
                 1L,
-                "건강한 간식 추천",
-                "https://example.com/images/snack.jpg",
-                "# 건강 간식\n\n맛있고 건강한 간식 추천...",
-                "식품",
+                "여름 린넨 셔츠 추천",
+                "# 린넨 셔츠\n\n시원한 여름을 위한 린넨 셔츠...",
+                "상의",
                 2L
         );
 
@@ -135,53 +127,47 @@ public class BlogInitializer implements CommandLineRunner {
         createBlog(
                 2L,
                 "남성 액세서리 추천 - 시계와 팔찌",
-                "https://example.com/images/accessory-men.jpg",
                 "# 남성 액세서리\n\n스타일을 완성하는 액세서리...",
-                "액세서리",
+                "ACC",
                 1L
         );
 
-        // 10. 여성 가방 추천
+        // 10. 여성 슬랙스 추천
         createBlog(
                 1L,
-                "여성 가방 추천 - 실용적이고 예쁜",
-                "https://example.com/images/bag.jpg",
-                "# 여성 가방\n\n실용성과 디자인을 모두 갖춘 가방...",
-                "액세서리",
+                "여성 슬랙스 추천 - 오피스룩 필수템",
+                "# 여성 슬랙스\n\n오피스룩에 어울리는 슬랙스 추천...",
+                "하의",
                 2L
         );
 
-        // 11. 주방 용품 추천
+        // 11. 로퍼 스타일링 가이드
         createBlog(
                 2L,
-                "주방 용품 추천 - 요리가 즐거워지는",
-                "https://example.com/images/kitchen.jpg",
-                "# 주방 용품\n\n요리를 더 편하게 만들어줄 용품들...",
-                "생활용품",
+                "로퍼 스타일링 가이드",
+                "# 로퍼 스타일링\n\n클래식한 로퍼 코디법...",
+                "신발",
                 1L
         );
 
-        // 12. 무선 이어폰 추천
+        // 12. 겨울 니트 추천
         createBlog(
                 1L,
-                "무선 이어폰 추천 - 음질과 편의성",
-                "https://example.com/images/earbuds.jpg",
-                "# 무선 이어폰\n\n최고의 무선 이어폰 추천...",
-                "전자제품",
+                "겨울 니트 추천 - 따뜻하고 포근한",
+                "# 겨울 니트\n\n포근한 겨울 니트 추천...",
+                "상의",
                 2L
         );
 
         log.info("[CREATED] Total {} blogs created successfully", blogRepository.count());
     }
 
-    private void createBlog(Long templateId, String title, String imgUrl,
-                            String content, String category, Long userId) {
+    private void createBlog(Long templateId, String title, String content, String category, Long userId) {
         log.debug("Creating blog: {}", title);
 
         Blog blog = Blog.builder()
                 .blogTemplateId(templateId)
                 .title(title)
-                .imgUrl(imgUrl)
                 .content(content)
                 .category(category)
                 .userId(userId)
