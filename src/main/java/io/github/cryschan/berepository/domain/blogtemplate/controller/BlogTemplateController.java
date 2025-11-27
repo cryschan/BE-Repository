@@ -145,7 +145,7 @@ public class BlogTemplateController {
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    @Operation(summary = "블로그 템플릿 수정", description = "기존 블로그 템플릿을 수정합니다. 본인의 템플릿만 수정 가능합니다.")
+    @Operation(summary = "내 블로그 템플릿 수정", description = "현재 로그인한 사용자의 블로그 템플릿을 수정합니다.")
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
@@ -192,24 +192,6 @@ public class BlogTemplateController {
                     )
             ),
             @ApiResponse(
-                    responseCode = "403",
-                    description = "권한 없음 (다른 사용자의 템플릿)",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = """
-                                            {
-                                                "message": "블로그 템플릿에 대한 권한이 없습니다. Template ID: 1",
-                                                "status": 403,
-                                                "code": "BT002",
-                                                "timestamp": "2024-11-24T14:30:45.123456",
-                                                "errors": null
-                                            }
-                                            """
-                            )
-                    )
-            ),
-            @ApiResponse(
                     responseCode = "404",
                     description = "템플릿을 찾을 수 없음",
                     content = @Content(
@@ -217,7 +199,7 @@ public class BlogTemplateController {
                             examples = @ExampleObject(
                                     value = """
                                             {
-                                                "message": "블로그 템플릿을 찾을 수 없습니다. ID: 999",
+                                                "message": "블로그 템플릿을 찾을 수 없습니다. User ID: 1",
                                                 "status": 404,
                                                 "code": "BT001",
                                                 "timestamp": "2024-11-24T14:30:45.123456",
@@ -228,16 +210,14 @@ public class BlogTemplateController {
                     )
             )
     })
-    @PutMapping("/{templateId}")
-    public BlogTemplateResponse updateTemplate(
-            @PathVariable Long templateId,
+    @PutMapping("/me")
+    public BlogTemplateResponse updateMyTemplate(
             @Valid @RequestBody BlogTemplateUpdateRequest request,
             Principal principal
     ) {
         Long userId = extractUserId(principal);
-        return blogTemplateService.updateTemplateResponse(
+        return blogTemplateService.updateTemplateByUserId(
                 userId,
-                templateId,
                 request.title(),
                 request.categoriesCopy(),
                 request.platformsCopy(),
@@ -249,7 +229,7 @@ public class BlogTemplateController {
         );
     }
 
-    @Operation(summary = "블로그 템플릿 삭제", description = "블로그 템플릿을 삭제합니다. 본인의 템플릿만 삭제 가능합니다.")
+    @Operation(summary = "내 블로그 템플릿 삭제", description = "현재 로그인한 사용자의 블로그 템플릿을 삭제합니다.")
     @ApiResponses({
             @ApiResponse(
                     responseCode = "204",
@@ -274,24 +254,6 @@ public class BlogTemplateController {
                     )
             ),
             @ApiResponse(
-                    responseCode = "403",
-                    description = "권한 없음 (다른 사용자의 템플릿)",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = """
-                                            {
-                                                "message": "블로그 템플릿에 대한 권한이 없습니다. Template ID: 1",
-                                                "status": 403,
-                                                "code": "BT002",
-                                                "timestamp": "2024-11-24T14:30:45.123456",
-                                                "errors": null
-                                            }
-                                            """
-                            )
-                    )
-            ),
-            @ApiResponse(
                     responseCode = "404",
                     description = "템플릿을 찾을 수 없음",
                     content = @Content(
@@ -299,7 +261,7 @@ public class BlogTemplateController {
                             examples = @ExampleObject(
                                     value = """
                                             {
-                                                "message": "블로그 템플릿을 찾을 수 없습니다. ID: 999",
+                                                "message": "블로그 템플릿을 찾을 수 없습니다. User ID: 1",
                                                 "status": 404,
                                                 "code": "BT001",
                                                 "timestamp": "2024-11-24T14:30:45.123456",
@@ -310,10 +272,10 @@ public class BlogTemplateController {
                     )
             )
     })
-    @DeleteMapping("/{templateId}")
-    public ResponseEntity<Void> deleteTemplate(@PathVariable Long templateId, Principal principal) {
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteMyTemplate(Principal principal) {
         Long userId = extractUserId(principal);
-        blogTemplateService.deleteTemplate(templateId, userId);
+        blogTemplateService.deleteTemplateByUserId(userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -365,8 +327,9 @@ public class BlogTemplateController {
             )
     })
     @GetMapping("/{templateId}")
-    public BlogTemplateResponse getTemplate(@PathVariable Long templateId) {
-        return blogTemplateService.getTemplateResponse(templateId);
+    public BlogTemplateResponse getTemplate(@PathVariable Long templateId, Principal principal) {
+        Long requesterId = extractUserId(principal);
+        return blogTemplateService.getTemplateResponseForAdmin(requesterId, templateId);
     }
 
     @Operation(summary = "전체 블로그 템플릿 조회", description = "모든 블로그 템플릿을 조회합니다. (인증 필요)")

@@ -1,9 +1,9 @@
 package io.github.cryschan.berepository.domain.blogtemplate.service;
 
+import io.github.cryschan.berepository.domain.blogtemplate.dto.response.BlogTemplateResponse;
 import io.github.cryschan.berepository.domain.blogtemplate.entity.BlogTemplate;
 import io.github.cryschan.berepository.domain.blogtemplate.exception.BlogTemplateException;
 import io.github.cryschan.berepository.domain.blogtemplate.repository.BlogTemplateRepository;
-import io.github.cryschan.berepository.domain.blogtemplate.dto.response.BlogTemplateResponse;
 import io.github.cryschan.berepository.domain.user.entity.role.UserRole;
 import io.github.cryschan.berepository.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -46,10 +46,6 @@ public class BlogTemplateService {
                 .orElseThrow(() -> BlogTemplateException.notFound(templateId));
     }
 
-    public BlogTemplateResponse getTemplateResponse(Long templateId) {
-        return BlogTemplateResponse.from(getTemplate(templateId));
-    }
-
     public BlogTemplateResponse getTemplateResponseByUserId(Long userId) {
         return blogTemplateRepository.findByUserId(userId)
                 .map(BlogTemplateResponse::from)
@@ -58,14 +54,21 @@ public class BlogTemplateService {
 
     public BlogTemplateResponse getTemplateResponseByUserId(Long targetUserId, Long requesterId) {
         if (!targetUserId.equals(requesterId) && !isAdmin(requesterId)) {
-            throw BlogTemplateException.accessDenied("본인의 템플릿만 조회할 수 있습니다");
+            throw BlogTemplateException.accessDenied("본인 또는 관리자만 조회할 수 있습니다");
         }
         return getTemplateResponseByUserId(targetUserId);
     }
 
+    public BlogTemplateResponse getTemplateResponseForAdmin(Long requesterId, Long templateId) {
+        if (!isAdmin(requesterId)) {
+            throw BlogTemplateException.accessDenied("관리자만 템플릿 ID로 조회할 수 있습니다");
+        }
+        return BlogTemplateResponse.from(getTemplate(templateId));
+    }
+
     @Transactional
-    public BlogTemplate updateTemplate(
-            Long templateId,
+    public BlogTemplateResponse updateTemplateByUserId(
+            Long userId,
             String title,
             List<String> categories,
             List<String> platforms,
@@ -75,7 +78,8 @@ public class BlogTemplateService {
             int charLimit,
             LocalTime dailyPostTime
     ) {
-        BlogTemplate template = getTemplate(templateId);
+        BlogTemplate template = blogTemplateRepository.findByUserId(userId)
+                .orElseThrow(() -> BlogTemplateException.notFoundByUserId(userId));
         template.updateTemplate(
                 title,
                 categories,
@@ -86,40 +90,14 @@ public class BlogTemplateService {
                 charLimit,
                 dailyPostTime
         );
-        return template;
+        return BlogTemplateResponse.from(template);
     }
 
     @Transactional
-    public BlogTemplateResponse updateTemplateResponse(
-            Long userId,
-            Long templateId,
-            String title,
-            List<String> categories,
-            List<String> platforms,
-            String shopUrl,
-            boolean includeImages,
-            int imageCount,
-            int charLimit,
-            LocalTime dailyPostTime
-    ) {
-        ensureOwnerOrAdmin(templateId, userId);
-        return BlogTemplateResponse.from(updateTemplate(
-                templateId,
-                title,
-                categories,
-                platforms,
-                shopUrl,
-                includeImages,
-                imageCount,
-                charLimit,
-                dailyPostTime
-        ));
-    }
-
-    @Transactional
-    public void deleteTemplate(Long templateId, Long userId) {
-        ensureOwnerOrAdmin(templateId, userId);
-        blogTemplateRepository.deleteById(templateId);
+    public void deleteTemplateByUserId(Long userId) {
+        BlogTemplate template = blogTemplateRepository.findByUserId(userId)
+                .orElseThrow(() -> BlogTemplateException.notFoundByUserId(userId));
+        blogTemplateRepository.deleteById(template.getId());
     }
 
     public List<BlogTemplateResponse> getAllTemplateResponses() {
@@ -174,13 +152,6 @@ public class BlogTemplateService {
             collected.addAll(blogTemplateRepository.findByAnyPlatform(platforms));
         }
         return List.copyOf(collected);
-    }
-
-    private void ensureOwnerOrAdmin(Long templateId, Long userId) {
-        BlogTemplate template = getTemplate(templateId);
-        if (!template.getUserId().equals(userId) && !isAdmin(userId)) {
-            throw BlogTemplateException.accessDenied(templateId);
-        }
     }
 
     private boolean isAdmin(Long userId) {
