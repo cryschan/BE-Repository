@@ -16,7 +16,6 @@ public record LoginRequest(
 
         @Schema(description = "비밀번호 (8-20자)", example = "1234qwer", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank(message = "비밀번호는 필수입니다")
-        @Size(min = 8, max = 20, message = "비밀번호는 8자 이상 20자 이하여야 합니다")
         String password
 ) {
 }

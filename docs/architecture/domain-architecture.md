@@ -183,16 +183,22 @@ domain/{domain-name}
 
 **주요 기능**
 - `POST /api/auth/signup`: 회원가입
-- `POST /api/auth/login`: 로그인 (JWT)
-- `GET /api/users/me`: 내 정보 조회
-- `PUT /api/users/me`: 내 정보 수정
-- `GET /api/users/me/usage`: 토큰 사용량 조회
+- `POST /api/auth/login`: 로그인 (Access Token + Refresh Token 발급)
+- `POST /api/auth/refresh`: 토큰 갱신 (Refresh Token → 새 Access Token)
+- `POST /api/auth/logout`: 로그아웃 (Refresh Token 무효화)
+- `GET /api/user-profile`: 내 프로필 조회
+- `GET /api/user-profile/{targetUserId}`: 다른 사용자 프로필 조회 (관리자 전용)
+- `PUT /api/user-profile/update`: 내 프로필 수정
 
 **요청/응답 DTO**
 - **SignupRequest**: 회원가입 요청 (username, email, department, password)
 - **LoginRequest**: 로그인 요청 (email, password)
+- **RefreshTokenRequest**: 토큰 갱신/로그아웃 요청 (refreshToken)
+- **UpdateProfileRequest**: 프로필 수정 요청 (username, department)
 - **UserResponse**: 회원가입 응답 (userId, email, username, createdAt, role)
-- **LoginResponse**: 로그인 응답 (userId, email, username, createdAt, role, token)
+- **LoginResponse**: 로그인 응답 (userId, email, username, createdAt, role, accessToken, refreshToken)
+- **TokenRefreshResponse**: 토큰 갱신 응답 (accessToken)
+- **UserDetailResponse**: 프로필 조회 응답 (userId, email, username, department, role, tokenUsage, createdAt, updatedAt)
 
 **기술 고려사항**
 - Spring Security + JWT 기반 인증
@@ -735,15 +741,17 @@ services:
 #### 인증 (Auth)
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| POST | /api/auth/register | 회원가입 | Public |
-| POST | /api/auth/login | 로그인 | Public |
+| POST | /api/auth/signup | 회원가입 | Public |
+| POST | /api/auth/login | 로그인 (Access + Refresh Token 발급) | Public |
+| POST | /api/auth/refresh | 토큰 갱신 | Public |
+| POST | /api/auth/logout | 로그아웃 (Refresh Token 무효화) | Public |
 
-#### 사용자 (User)
+#### 사용자 프로필 (User Profile)
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| GET | /api/users/me | 내 정보 조회 | USER |
-| PUT | /api/users/me | 내 정보 수정 | USER |
-| GET | /api/users/me/usage | 토큰 사용량 조회 | USER |
+| GET | /api/user-profile | 내 프로필 조회 | USER |
+| GET | /api/user-profile/{targetUserId} | 다른 사용자 프로필 조회 | ADMIN |
+| PUT | /api/user-profile/update | 내 프로필 수정 | USER |
 
 #### 블로그 템플릿 (Blog Template)
 | Method | Endpoint | Description | Auth |
@@ -918,6 +926,7 @@ Phase 4: 완성도 향상
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |------|------|-----------|--------|
 | 2025-01-19 | 1.0 | 초안 작성 | AI |
+| 2025-11-25 | 1.1 | User API 경로 업데이트 (/api/user-profile), DTO 추가 | - |
 
 ---
 
