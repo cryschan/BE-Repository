@@ -30,102 +30,139 @@
 
 ### 1.2 User Domain 확장
 
-#### Entity 수정
+#### Entity 현황
 ```java
 @Entity
+@Table(name = "users")
 public class User {
-    // 기존 필드 유지
+    // 현재 구현된 필드
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userId;
+
+    @Column(unique = true)
     private String email;
     private String password;
     private String username;
+
+    @Enumerated(EnumType.STRING)
     private UserRole role;
+
     private String department;
     private Long tokenUsage;
-    
-    // v1 추가 필드
-    private LocalDateTime lastLoginAt;
-    private boolean isActive = true;
+
+    @CreatedDate
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
+
+    // 추후 구현 예정 필드
+    // private LocalDateTime lastLoginAt;
+    // private boolean isActive = true;
 }
 ```
 
 #### API 엔드포인트 (v1)
-| Method | Endpoint | 설명 | 우선순위 |
-|--------|----------|------|----------|
-| GET | /api/v1/profile | 내 프로필 조회 | 높음 |
-| PUT | /api/v1/profile | 프로필 기본정보 수정 | 높음 |
-| PATCH | /api/v1/profile/password | 비밀번호 변경 | 높음 |
+| Method | Endpoint | 설명 | 상태 |
+|--------|----------|------|------|
+| GET | /api/user-profile | 내 프로필 조회 | ✅ 구현 완료 |
+| GET | /api/user-profile/{targetUserId} | 다른 사용자 프로필 조회 (관리자) | ✅ 구현 완료 |
+| PUT | /api/user-profile/update | 프로필 기본정보 수정 | ✅ 구현 완료 |
+| PATCH | /api/user-profile/password | 비밀번호 변경 | 🔜 추후 구현 예정 |
 
 #### DTO 클래스 (v1)
 ```java
-// Request
-public record UserProfileUpdateRequest(
+// Request (구현 완료)
+public record UpdateProfileRequest(
+    @NotBlank(message = "사용자 이름은 필수입니다")
     String username,
     String department
 ) {}
 
+// Request (추후 구현 예정)
 public record PasswordChangeRequest(
     String currentPassword,
     String newPassword,
     String confirmPassword
 ) {}
 
-// Response  
+// Response (구현 완료)
 public record UserDetailResponse(
     Long userId,
     String email,
     String username,
     String department,
     UserRole role,
+    Long tokenUsage,
     LocalDateTime createdAt,
-    LocalDateTime lastLoginAt
+    LocalDateTime updatedAt
 ) {}
 ```
 
 #### Service 구현 (v1)
 ```java
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 @Service
 public class UserProfileService {
-    
-    public UserDetailResponse getMyProfile() {
-        // 현재 인증된 사용자 정보 조회
-        User currentUser = authService.getCurrentUser();
-        return UserDetailResponse.from(currentUser);
+
+    private final UserRepository userRepository;
+
+    // 자기 프로필 조회 (구현 완료)
+    public UserDetailResponse getMyProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> UserException.notFound(userId));
+        return UserDetailResponse.from(user);
     }
-    
-    @Transactional
-    public UserDetailResponse updateProfile(UserProfileUpdateRequest request) {
-        // 기본 정보만 수정 (username, department)
-        User currentUser = authService.getCurrentUser();
-        currentUser.updateBasicInfo(request.username(), request.department());
-        return UserDetailResponse.from(currentUser);
+
+    // 다른 사용자 조회 - 관리자 전용 (구현 완료)
+    public UserDetailResponse getUserProfile(Long userId, Long targetUserId) {
+        User admin = userRepository.findById(userId)
+                .orElseThrow(() -> UserException.notFound(userId));
+        if (admin.getRole() != UserRole.ADMIN) {
+            throw UserException.accessDenied();
+        }
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> UserException.notFound(targetUserId));
+        return UserDetailResponse.from(targetUser);
     }
-    
+
+    // 프로필 업데이트 (구현 완료)
     @Transactional
-    public void changePassword(PasswordChangeRequest request) {
-        // 비밀번호 변경
-        User currentUser = authService.getCurrentUser();
-        validateCurrentPassword(request.currentPassword(), currentUser.getPassword());
-        currentUser.changePassword(passwordEncoder.encode(request.newPassword()));
+    public UserDetailResponse updateMyProfile(Long userId, UpdateProfileRequest request) {
+        User updateUser = userRepository.findById(userId)
+                .orElseThrow(() -> UserException.notFound(userId));
+        updateUser.updateProfile(request.username(), request.department());
+        return UserDetailResponse.from(updateUser);
+    }
+
+    // 비밀번호 변경 (추후 구현 예정)
+    @Transactional
+    public void changePassword(Long userId, PasswordChangeRequest request) {
+        // TODO: 비밀번호 변경 로직 구현
     }
 }
 ```
 
-### 1.3 v1 구현 일정
+> 💡 **참고**: Controller에서 `@AuthenticationPrincipal Long userId`로 JWT에서 추출한 사용자 ID를 받습니다.
 
-**Phase 1: 보안 기반 (1주)**
-- [ ] JWT 의존성 추가
-- [ ] JwtTokenProvider 구현
-- [ ] JwtAuthenticationFilter 구현
-- [ ] Spring Security 설정
-- [ ] 기존 로그인 API와 JWT 통합
+### 1.3 v1 구현 현황
 
-**Phase 2: 마이페이지 핵심 (1주)**
-- [ ] User 엔티티 확장 (v1 필드만)
-- [ ] UserDetailResponse DTO 생성
-- [ ] 프로필 조회 API 구현
-- [ ] 프로필 수정 API 구현 (기본 정보만)
-- [ ] 비밀번호 변경 API 구현
+**Phase 1: 보안 기반** ✅ 완료
+- [x] JWT 의존성 추가
+- [x] JwtUtil 구현 (Access Token + Refresh Token)
+- [x] JwtAuthenticationFilter 구현
+- [x] Spring Security 설정
+- [x] 기존 로그인 API와 JWT 통합
+- [x] Refresh Token 기반 토큰 갱신/로그아웃
+
+**Phase 2: 마이페이지 핵심** ✅ 완료
+- [x] UserDetailResponse DTO 생성
+- [x] UpdateProfileRequest DTO 생성
+- [x] 프로필 조회 API 구현 (GET /api/user-profile)
+- [x] 다른 사용자 프로필 조회 API 구현 (GET /api/user-profile/{id}, 관리자)
+- [x] 프로필 수정 API 구현 (PUT /api/user-profile/update)
+- [ ] 비밀번호 변경 API 구현 (추후 예정)
 
 ---
 

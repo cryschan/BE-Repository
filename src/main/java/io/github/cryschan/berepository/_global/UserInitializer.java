@@ -18,8 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Slf4j
 @RequiredArgsConstructor
-@Component
 @Order(1)
+@Component
 public class UserInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;

@@ -158,13 +158,13 @@ String token = authHeader.substring(7); // "Bearer " 제거 (7자)
 
 ### 2. SecurityContext에 Principal 저장
 
-**JwtAuthenticationFilter.java:53-57**
+**JwtAuthenticationFilter.java** (현재 구현)
 ```java
 Long userId = jwtUtil.getUserId(token);
 
 UsernamePasswordAuthenticationToken authenticationToken =
     new UsernamePasswordAuthenticationToken(
-        userId.toString(),  // ← Long을 String으로 변환
+        userId,  // ← Long 타입 그대로 저장
         null,
         Collections.emptyList()
     );
@@ -172,13 +172,13 @@ UsernamePasswordAuthenticationToken authenticationToken =
 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 ```
 
-여기서 `userId.toString()`으로 **Long → String 변환**하여 Principal로 저장합니다.
+> ✅ **현재 구현**: `userId`를 Long 타입 그대로 Principal로 저장합니다.
 
-### 3. 문제점
+### 3. 현재 해결 방식
 
-- SecurityContext에는 **String 타입**(`"1"`, `"2"` 같은 문자열)이 저장됨
-- Controller에서 `@AuthenticationPrincipal UserDetails`로 받을 수 없음
-- UserDetails 인터페이스에는 `getUserId()` 메서드가 없음
+- SecurityContext에 **Long 타입**으로 저장됨
+- Controller에서 `@AuthenticationPrincipal Long userId`로 직접 받을 수 있음
+- 별도의 CustomUserDetails 구현 없이 간단하게 처리
 
 ---
 
@@ -270,37 +270,35 @@ Long userId = (Long) auth.getPrincipal();
 
 ## TODO 해결 방법
 
-현재 `BlogController.java:52`의 TODO를 해결하는 두 가지 방법:
+> ✅ **해결 완료**: 현재 프로젝트에서는 **Long 타입 직접 저장 방식**을 채택하여 구현 완료되었습니다.
 
-### 방법 1: SecurityContext에서 직접 userId 추출 (간단, 빠른 적용)
+### 현재 구현 방식: @AuthenticationPrincipal Long userId
 
 ```java
 @GetMapping("/my")
 @Operation(summary = "내 블로그 글 조회")
 public ResponseEntity<BlogPageResponse> getMyBlogs(
+        @AuthenticationPrincipal Long userId,  // ← Long으로 직접 받음
         @RequestParam(defaultValue = "1") int page
 ) {
-    // SecurityContext에서 userId 추출 (String으로 저장되어 있음)
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    Long userId = Long.parseLong((String) authentication.getPrincipal());
-    
     BlogPageResponse response = blogService.getMyBlogs(userId, page);
     return ResponseEntity.ok(response);
 }
 ```
 
 **장점**:
-- 기존 코드 최소 변경
-- 빠르게 적용 가능
+- 간결한 코드
+- 타입 캐스팅 불필요
+- Spring Security 어노테이션 활용
 
 **단점**:
-- 타입 안정성 부족
-- 매번 형변환 필요
-- 코드 중복 발생 가능
+- 추가 정보(role, email 등) 저장 불가
+- 확장성 제한
 
-### 방법 2: CustomUserDetails 구현 (권장, 확장성 좋음)
+### 대안: CustomUserDetails 구현 (추후 확장 시 고려)
 
-이 방법은 [다음 섹션](#모범-사례-customuserdetails-구현)에서 자세히 설명합니다.
+역할(Role) 기반 인가나 추가 사용자 정보가 필요한 경우 CustomUserDetails 구현을 고려할 수 있습니다.
+자세한 내용은 [다음 섹션](#모범-사례-customuserdetails-구현)을 참조하세요.
 
 ---
 
@@ -523,17 +521,32 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ## 결론
 
-**Spring Security의 표준은 UserDetails 구현체를 사용하는 것**입니다.
+### 현재 프로젝트 구현 방식
 
-- Long이나 String을 직접 사용하는 것은 간단한 프로토타입이나 학습 목적에서는 가능
-- 실무 프로젝트에서는 **CustomUserDetails 구현체를 만들어 사용하는 것이 모범 사례**
-- 타입 안정성, 확장성, 유지보수성 측면에서 모두 우수
+현재 프로젝트에서는 **Long 타입 직접 저장 방식**을 채택했습니다:
 
-### 권장 사항
+```java
+// JwtAuthenticationFilter에서
+UsernamePasswordAuthenticationToken authenticationToken =
+    new UsernamePasswordAuthenticationToken(userId, null, Collections.emptyList());
 
-현재 코드베이스를 개선하려면:
+// Controller에서
+@GetMapping
+public UserDetailResponse myProfile(@AuthenticationPrincipal Long userId) {
+    return profileService.getMyProfile(userId);
+}
+```
+
+**채택 이유**:
+- 현재 요구사항에 충분 (userId만 필요)
+- 간결한 구현
+- 빠른 개발 속도
+
+### 추후 확장 시 고려사항
+
+역할(Role) 기반 접근 제어나 추가 사용자 정보가 필요해지면:
 1. **CustomUserDetails 구현체 생성**
-2. **JwtAuthenticationFilter 수정** (String 대신 CustomUserDetails 사용)
-3. **모든 Controller에서 @AuthenticationPrincipal CustomUserDetails 사용**
+2. **JwtAuthenticationFilter 수정** (Long 대신 CustomUserDetails 사용)
+3. **Controller에서 @AuthenticationPrincipal CustomUserDetails 사용**
 
-이렇게 하면 일관성 있고 유지보수하기 쉬운 코드를 작성할 수 있습니다.
+이렇게 하면 확장성 있고 유지보수하기 쉬운 코드를 작성할 수 있습니다.

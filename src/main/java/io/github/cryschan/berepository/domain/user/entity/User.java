@@ -1,6 +1,7 @@
 package io.github.cryschan.berepository.domain.user.entity;
 
 import io.github.cryschan.berepository.domain.user.dto.request.SignupRequest;
+import io.github.cryschan.berepository.domain.user.dto.request.UpdateProfileRequest;
 import io.github.cryschan.berepository.domain.user.entity.role.UserRole;
 import jakarta.persistence.*;
 import lombok.Builder;
@@ -12,6 +13,10 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
+/**
+ * 사용자 엔티티
+ * 시스템 사용자의 계정 정보를 관리합니다.
+ */
 @Table(name = "users")
 @Getter
 @NoArgsConstructor
@@ -46,6 +51,14 @@ public class User {
         this.password = password;
         this.username = username;
         this.role = role != null ? role : UserRole.USER; // 만약 입력이 없으면 default로 USER 설정한다.
+        this.department = department;
+    }
+
+    public void updateProfile(String username, String department) {
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException("사용자 이름은 필수입니다.");
+        }
+        this.username = username;
         this.department = department;
     }
 

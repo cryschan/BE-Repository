@@ -1,5 +1,6 @@
 package io.github.cryschan.berepository.domain.user.service;
 
+import io.github.cryschan.berepository.domain.user.dto.request.UpdateProfileRequest;
 import io.github.cryschan.berepository.domain.user.dto.response.UserDetailResponse;
 import io.github.cryschan.berepository.domain.user.entity.User;
 import io.github.cryschan.berepository.domain.user.entity.role.UserRole;
@@ -303,6 +304,189 @@ class UserProfileServiceTest {
             verify(userRepository, times(2)).findById(adminId);
             verify(userRepository).findById(2L);
             verify(userRepository).findById(3L);
+        }
+    }
+
+    @Nested
+    @DisplayName("마이페이지 업데이트")
+    class UpdateMyProfile {
+
+        @Test
+        @DisplayName("성공: username과 department 모두 업데이트")
+        void updateMyProfile_Success_BothFields() {
+            // given
+            String newUsername = "새로운이름";
+            String newDepartment = "새로운부서";
+            UpdateProfileRequest request = new UpdateProfileRequest(newUsername, newDepartment);
+
+            given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
+
+            // when
+            UserDetailResponse response = userProfileService.updateMyProfile(userId, request);
+
+            // then
+            verify(mockUser).updateProfile(newUsername, newDepartment);
+            verify(userRepository).findById(userId);
+            assertThat(response).isNotNull();
+        }
+
+        @Test
+        @DisplayName("성공: username만 업데이트 (department null)")
+        void updateMyProfile_Success_UsernameOnly() {
+            // given
+            String newUsername = "새로운이름";
+            UpdateProfileRequest request = new UpdateProfileRequest(newUsername, null);
+
+            given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
+
+            // when
+            UserDetailResponse response = userProfileService.updateMyProfile(userId, request);
+
+            // then
+            verify(mockUser).updateProfile(newUsername, null);
+            verify(userRepository).findById(userId);
+            assertThat(response).isNotNull();
+        }
+
+        @Test
+        @DisplayName("성공: department만 업데이트")
+        void updateMyProfile_Success_DepartmentOnly() {
+            // given
+            String existingUsername = "기존이름";
+            String newDepartment = "새로운부서";
+            UpdateProfileRequest request = new UpdateProfileRequest(existingUsername, newDepartment);
+
+            given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
+
+            // when
+            UserDetailResponse response = userProfileService.updateMyProfile(userId, request);
+
+            // then
+            verify(mockUser).updateProfile(existingUsername, newDepartment);
+            verify(userRepository).findById(userId);
+            assertThat(response).isNotNull();
+        }
+
+        @Test
+        @DisplayName("성공: 변경사항 없음 (동일한 값)")
+        void updateMyProfile_Success_NoChanges() {
+            // given
+            String sameUsername = "테스트유저";
+            String sameDepartment = "개발팀";
+            UpdateProfileRequest request = new UpdateProfileRequest(sameUsername, sameDepartment);
+
+            given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
+
+            // when
+            UserDetailResponse response = userProfileService.updateMyProfile(userId, request);
+
+            // then
+            verify(mockUser).updateProfile(sameUsername, sameDepartment);
+            verify(userRepository).findById(userId);
+            assertThat(response).isNotNull();
+        }
+
+        @Test
+        @DisplayName("실패: 존재하지 않는 userId")
+        void updateMyProfile_UserNotFound() {
+            // given
+            Long nonExistentUserId = 999L;
+            UpdateProfileRequest request = new UpdateProfileRequest("새이름", "새부서");
+
+            given(userRepository.findById(nonExistentUserId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> userProfileService.updateMyProfile(nonExistentUserId, request))
+                    .isInstanceOf(UserException.class)
+                    .hasMessageContaining("999");
+
+            verify(userRepository).findById(nonExistentUserId);
+        }
+
+        @Test
+        @DisplayName("실패: null userId")
+        void updateMyProfile_NullUserId() {
+            // given
+            UpdateProfileRequest request = new UpdateProfileRequest("새이름", "새부서");
+
+            // when & then
+            assertThatThrownBy(() -> userProfileService.updateMyProfile(null, request))
+                    .isInstanceOf(UserException.class)
+                    .hasMessageContaining("userId cannot be null");
+
+            verify(userRepository, never()).findById(any());
+        }
+
+        @Test
+        @DisplayName("실패: username이 빈 문자열")
+        void updateMyProfile_EmptyUsername() {
+            // given
+            User realUser = User.builder()
+                    .email("test@example.com")
+                    .username("기존이름")
+                    .department("기존부서")
+                    .password("password")
+                    .role(UserRole.USER)
+                    .build();
+
+            // when & then
+            assertThatThrownBy(() -> realUser.updateProfile("", "부서"))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("사용자 이름은 필수입니다.");
+        }
+
+        @Test
+        @DisplayName("실패: username이 null")
+        void updateMyProfile_NullUsername() {
+            // given
+            User realUser = User.builder()
+                    .email("test@example.com")
+                    .username("기존이름")
+                    .department("기존부서")
+                    .password("password")
+                    .role(UserRole.USER)
+                    .build();
+
+            // when & then
+            assertThatThrownBy(() -> realUser.updateProfile(null, "부서"))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("사용자 이름은 필수입니다.");
+        }
+
+        @Test
+        @DisplayName("엣지케이스: department를 null로 변경 (기존값 제거)")
+        void updateMyProfile_EdgeCase_RemoveDepartment() {
+            // given
+            String newUsername = "새이름";
+            UpdateProfileRequest request = new UpdateProfileRequest(newUsername, null);
+
+            given(userRepository.findById(userId)).willReturn(Optional.of(mockUser));
+
+            // when
+            UserDetailResponse response = userProfileService.updateMyProfile(userId, request);
+
+            // then
+            verify(mockUser).updateProfile(newUsername, null);
+            verify(userRepository).findById(userId);
+            assertThat(response).isNotNull();
+        }
+
+        @Test
+        @DisplayName("엣지케이스: username 공백만 입력")
+        void updateMyProfile_EdgeCase_WhitespaceUsername() {
+            // given
+            User realUser = User.builder()
+                    .email("test@example.com")
+                    .username("기존이름")
+                    .department("기존부서")
+                    .password("password")
+                    .role(UserRole.USER)
+                    .build();
+
+            // when & then
+            assertThatThrownBy(() -> realUser.updateProfile("   ", "부서"))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("사용자 이름은 필수입니다");
         }
     }
 }

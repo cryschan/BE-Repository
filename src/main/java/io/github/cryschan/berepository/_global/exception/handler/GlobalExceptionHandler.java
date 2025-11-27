@@ -1,18 +1,18 @@
 package io.github.cryschan.berepository._global.exception.handler;
 
 import io.github.cryschan.berepository._global.exception.base.BaseException;
+import io.github.cryschan.berepository._global.exception.base.ErrorCode;
 import io.github.cryschan.berepository._global.exception.dto.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 애플리케이션 전역 예외를 처리하는 핸들러 클래스입니다.
@@ -51,24 +51,29 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException e) {
-        log.error("MethodArgumentNotValidException: {}", e.getMessage());
+        log.warn("MethodArgumentNotValidException: {}", e.getMessage());
 
-        BindingResult bindingResult = e.getBindingResult();
-        List<ErrorResponse.FieldError> fieldErrors = bindingResult.getFieldErrors()
+        ErrorCode errorCode = ErrorCode.INVALID_INPUT;
+
+        List<ErrorResponse.FieldError> fieldErrors = e.getBindingResult().getFieldErrors()
                 .stream()
                 .map(error -> new ErrorResponse.FieldError(
                         error.getField(),
-                        error.getRejectedValue() != null ? error.getRejectedValue().toString() : "",
                         error.getDefaultMessage()
                 ))
                 .toList();
 
+        String combinedMessage = e.getBindingResult().getFieldErrors()
+                .stream()
+                .map(error -> error.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
+                .status(errorCode.getHttpStatus())
                 .body(ErrorResponse.of(
-                        "이메일 혹은 비밀번호가 일치하지 않습니다.",
-                        HttpStatus.BAD_REQUEST.value(),
-                        "C001",
+                        combinedMessage,
+                        errorCode.getHttpStatusCode(),
+                        errorCode.getCode(),
                         fieldErrors
                 ));
     }
@@ -81,12 +86,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
         log.error("Unexpected Exception: {}", e.getMessage(), e);
 
+        ErrorCode errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
+
         return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .status(errorCode.getHttpStatus())
                 .body(ErrorResponse.of(
-                        "서버 내부 오류가 발생했습니다.",
-                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                        "C999"
+                        errorCode.getMessage(),
+                        errorCode.getHttpStatusCode(),
+                        errorCode.getCode()
                 ));
     }
 }
