@@ -406,3 +406,155 @@ class BlogServiceTest {
         }
     }
 }
+    @Nested
+    @DisplayName("블로그 수정 테스트")
+    class UpdateBlogTest {
+
+        private BlogUpdateRequest validUpdateRequest;
+
+        @BeforeEach
+        void setUpUpdateRequest() {
+            validUpdateRequest = createBlogUpdateRequest(
+                    "수정된 제목",
+                    "수정된 내용입니다.",
+                    "하의",
+                    2L
+            );
+        }
+
+        @Test
+        @DisplayName("성공: 블로그를 정상적으로 수정한다")
+        void updateBlog_Success() {
+            Long blogId = 1L;
+            Long userId = 1L;
+            given(blogRepository.findById(blogId)).willReturn(Optional.of(blog1));
+
+            BlogResponse response = blogService.updateBlog(blogId, userId, validUpdateRequest);
+
+            assertThat(response).isNotNull();
+            assertThat(response.getTitle()).isEqualTo("수정된 제목");
+            assertThat(response.getContent()).isEqualTo("수정된 내용입니다.");
+            assertThat(response.getCategory()).isEqualTo("하의");
+            assertThat(response.getBlogTemplateId()).isEqualTo(2L);
+            verify(blogRepository).findById(blogId);
+        }
+
+        @Test
+        @DisplayName("성공: 제목만 수정한다")
+        void updateBlog_Title_Only() {
+            Long blogId = 1L;
+            Long userId = 1L;
+            BlogUpdateRequest request = createBlogUpdateRequest(
+                    "새로운 제목",
+                    blog1.getContent(),
+                    blog1.getCategory(),
+                    blog1.getBlogTemplateId()
+            );
+            given(blogRepository.findById(blogId)).willReturn(Optional.of(blog1));
+
+            BlogResponse response = blogService.updateBlog(blogId, userId, request);
+
+            assertThat(response.getTitle()).isEqualTo("새로운 제목");
+            assertThat(response.getContent()).isEqualTo(blog1.getContent());
+            verify(blogRepository).findById(blogId);
+        }
+
+        @Test
+        @DisplayName("성공: 마크다운 형식의 이미지가 포함된 내용을 수정한다")
+        void updateBlog_With_Markdown_Images() {
+            Long blogId = 1L;
+            Long userId = 1L;
+            String contentWithImages = """
+                    # 여름 반팔 티셔츠 추천
+                    
+                    ![티셔츠1](https://bucket.s3.ap-northeast-2.amazonaws.com/uploads/550e8400-e29b-41d4-a716-446655440000_tshirt1.jpg)
+                    
+                    시원한 소재로 만들어진 티셔츠입니다.
+                    """;
+            BlogUpdateRequest request = createBlogUpdateRequest("이미지가 포함된 블로그", contentWithImages, "상의", 1L);
+            given(blogRepository.findById(blogId)).willReturn(Optional.of(blog1));
+
+            BlogResponse response = blogService.updateBlog(blogId, userId, request);
+
+            assertThat(response.getContent()).contains("![티셔츠1]");
+            assertThat(response.getContent()).contains("s3.ap-northeast-2.amazonaws.com");
+            verify(blogRepository).findById(blogId);
+        }
+
+        @Test
+        @DisplayName("실패: 존재하지 않는 블로그를 수정하려고 하면 BlogException이 발생한다")
+        void updateBlog_Fail_BlogNotFound() {
+            Long blogId = 999L;
+            Long userId = 1L;
+            given(blogRepository.findById(blogId)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> blogService.updateBlog(blogId, userId, validUpdateRequest))
+                    .isInstanceOf(BlogException.class)
+                    .hasMessageContaining("블로그를 찾을 수 없습니다");
+
+            verify(blogRepository).findById(blogId);
+        }
+
+        @Test
+        @DisplayName("실패: 다른 사용자의 블로그를 수정하려고 하면 BlogException이 발생한다")
+        void updateBlog_Fail_Forbidden() {
+            Long blogId = 1L;
+            Long userId = 2L;
+            given(blogRepository.findById(blogId)).willReturn(Optional.of(blog1));
+
+            assertThatThrownBy(() -> blogService.updateBlog(blogId, userId, validUpdateRequest))
+                    .isInstanceOf(BlogException.class)
+                    .hasMessageContaining("권한이 없습니다");
+
+            verify(blogRepository).findById(blogId);
+        }
+
+        @Test
+        @DisplayName("성공: 모든 필드를 동시에 수정한다")
+        void updateBlog_All_Fields() {
+            Long blogId = 1L;
+            Long userId = 1L;
+            BlogUpdateRequest request = createBlogUpdateRequest(
+                    "완전히 새로운 제목",
+                    "완전히 새로운 내용입니다.",
+                    "신발",
+                    3L
+            );
+            given(blogRepository.findById(blogId)).willReturn(Optional.of(blog1));
+
+            BlogResponse response = blogService.updateBlog(blogId, userId, request);
+
+            assertThat(response.getTitle()).isEqualTo("완전히 새로운 제목");
+            assertThat(response.getContent()).isEqualTo("완전히 새로운 내용입니다.");
+            assertThat(response.getCategory()).isEqualTo("신발");
+            assertThat(response.getBlogTemplateId()).isEqualTo(3L);
+            verify(blogRepository).findById(blogId);
+        }
+    }
+
+    private BlogUpdateRequest createBlogUpdateRequest(String title, String content, String category, Long blogTemplateId) {
+        try {
+            BlogUpdateRequest request = new BlogUpdateRequest();
+            
+            java.lang.reflect.Field titleField = BlogUpdateRequest.class.getDeclaredField("title");
+            titleField.setAccessible(true);
+            titleField.set(request, title);
+
+            java.lang.reflect.Field contentField = BlogUpdateRequest.class.getDeclaredField("content");
+            contentField.setAccessible(true);
+            contentField.set(request, content);
+
+            java.lang.reflect.Field categoryField = BlogUpdateRequest.class.getDeclaredField("category");
+            categoryField.setAccessible(true);
+            categoryField.set(request, category);
+
+            java.lang.reflect.Field blogTemplateIdField = BlogUpdateRequest.class.getDeclaredField("blogTemplateId");
+            blogTemplateIdField.setAccessible(true);
+            blogTemplateIdField.set(request, blogTemplateId);
+
+            return request;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create BlogUpdateRequest", e);
+        }
+    }
+}
