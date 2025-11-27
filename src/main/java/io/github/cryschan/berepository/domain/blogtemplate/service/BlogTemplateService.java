@@ -41,34 +41,19 @@ public class BlogTemplateService {
         return BlogTemplateResponse.from(createTemplate(template));
     }
 
-    public BlogTemplate getTemplate(Long templateId) {
-        return blogTemplateRepository.findById(templateId)
-                .orElseThrow(() -> BlogTemplateException.notFound(templateId));
-    }
-
-    public BlogTemplateResponse getTemplateResponseByUserId(Long userId) {
-        return blogTemplateRepository.findByUserId(userId)
-                .map(BlogTemplateResponse::from)
-                .orElseThrow(() -> BlogTemplateException.notFoundByUserId(userId));
-    }
-
     public BlogTemplateResponse getTemplateResponseByUserId(Long targetUserId, Long requesterId) {
         if (!targetUserId.equals(requesterId) && !isAdmin(requesterId)) {
             throw BlogTemplateException.accessDenied("본인 또는 관리자만 조회할 수 있습니다");
         }
-        return getTemplateResponseByUserId(targetUserId);
-    }
-
-    public BlogTemplateResponse getTemplateResponseForAdmin(Long requesterId, Long templateId) {
-        if (!isAdmin(requesterId)) {
-            throw BlogTemplateException.accessDenied("관리자만 템플릿 ID로 조회할 수 있습니다");
-        }
-        return BlogTemplateResponse.from(getTemplate(templateId));
+        return blogTemplateRepository.findByUserId(targetUserId)
+                .map(BlogTemplateResponse::from)
+                .orElseThrow(() -> BlogTemplateException.notFoundByUserId(targetUserId));
     }
 
     @Transactional
     public BlogTemplateResponse updateTemplateByUserId(
             Long userId,
+            Long requesterId,
             String title,
             List<String> categories,
             List<String> platforms,
@@ -78,6 +63,9 @@ public class BlogTemplateService {
             int charLimit,
             LocalTime dailyPostTime
     ) {
+        if (!userId.equals(requesterId) && !isAdmin(requesterId)) {
+            throw BlogTemplateException.accessDenied("본인 또는 관리자만 수정할 수 있습니다");
+        }
         BlogTemplate template = blogTemplateRepository.findByUserId(userId)
                 .orElseThrow(() -> BlogTemplateException.notFoundByUserId(userId));
         template.updateTemplate(
@@ -94,7 +82,10 @@ public class BlogTemplateService {
     }
 
     @Transactional
-    public void deleteTemplateByUserId(Long userId) {
+    public void deleteTemplateByUserId(Long userId, Long requesterId) {
+        if (!userId.equals(requesterId) && !isAdmin(requesterId)) {
+            throw BlogTemplateException.accessDenied("본인 또는 관리자만 삭제할 수 있습니다");
+        }
         BlogTemplate template = blogTemplateRepository.findByUserId(userId)
                 .orElseThrow(() -> BlogTemplateException.notFoundByUserId(userId));
         blogTemplateRepository.deleteById(template.getId());

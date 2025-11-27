@@ -187,6 +187,7 @@ class BlogTemplateServiceTest {
         // when
         BlogTemplateResponse response = blogTemplateService.updateTemplateByUserId(
                 userId,
+                userId,
                 "수정된 제목",
                 List.of("여행"),
                 List.of("인스타그램"),
@@ -216,7 +217,7 @@ class BlogTemplateServiceTest {
         given(blogTemplateRepository.findByUserId(userId)).willReturn(Optional.of(template));
 
         // when
-        blogTemplateService.deleteTemplateByUserId(userId);
+        blogTemplateService.deleteTemplateByUserId(userId, userId);
 
         // then
         verify(blogTemplateRepository).deleteById(7L);
@@ -230,7 +231,7 @@ class BlogTemplateServiceTest {
         given(blogTemplateRepository.findByUserId(userId)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> blogTemplateService.deleteTemplateByUserId(userId))
+        assertThatThrownBy(() -> blogTemplateService.deleteTemplateByUserId(userId, userId))
                 .isInstanceOf(BlogTemplateException.class);
         verify(blogTemplateRepository, never()).deleteById(anyLong());
     }
@@ -317,6 +318,7 @@ class BlogTemplateServiceTest {
         // when
         BlogTemplateResponse response = blogTemplateService.updateTemplateByUserId(
                 userId,
+                userId,
                 "제목",
                 null,
                 null,
@@ -332,6 +334,129 @@ class BlogTemplateServiceTest {
         assertThat(response.platforms()).isEmpty();
         assertThat(response.includeImages()).isFalse();
         assertThat(response.imageCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("관리자는 다른 사용자의 템플릿을 수정할 수 있다")
+    void updateTemplateByUserId_AdminCanUpdateOthersTemplate() {
+        // given
+        Long targetUserId = 10L;
+        Long adminUserId = 1L;
+        BlogTemplate template = createTemplate(5L, targetUserId, true, 3);
+
+        User adminUser = User.builder()
+                .email("admin@test.com")
+                .password("password")
+                .username("admin")
+                .role(UserRole.ADMIN)
+                .department("IT")
+                .build();
+
+        given(blogTemplateRepository.findByUserId(targetUserId)).willReturn(Optional.of(template));
+        given(userRepository.findById(adminUserId)).willReturn(Optional.of(adminUser));
+
+        // when
+        BlogTemplateResponse response = blogTemplateService.updateTemplateByUserId(
+                targetUserId,
+                adminUserId,
+                "관리자가 수정",
+                List.of("여행"),
+                List.of("인스타그램"),
+                "https://shop2.com",
+                false,
+                0,
+                1500,
+                LocalTime.NOON
+        );
+
+        // then
+        assertThat(template.getTitle()).isEqualTo("관리자가 수정");
+        assertThat(response.title()).isEqualTo("관리자가 수정");
+    }
+
+    @Test
+    @DisplayName("일반 사용자는 다른 사용자의 템플릿을 수정할 수 없다")
+    void updateTemplateByUserId_UserCannotUpdateOthersTemplate() {
+        // given
+        Long targetUserId = 10L;
+        Long otherUserId = 2L;
+
+        User regularUser = User.builder()
+                .email("user@test.com")
+                .password("password")
+                .username("user")
+                .role(UserRole.USER)
+                .department("Sales")
+                .build();
+
+        given(userRepository.findById(otherUserId)).willReturn(Optional.of(regularUser));
+
+        // when & then
+        assertThatThrownBy(() -> blogTemplateService.updateTemplateByUserId(
+                targetUserId,
+                otherUserId,
+                "수정 시도",
+                List.of("여행"),
+                List.of("인스타그램"),
+                "https://shop2.com",
+                false,
+                0,
+                1500,
+                LocalTime.NOON
+        ))
+                .isInstanceOf(BlogTemplateException.class)
+                .hasMessageContaining("본인 또는 관리자만 수정할 수 있습니다");
+    }
+
+    @Test
+    @DisplayName("관리자는 다른 사용자의 템플릿을 삭제할 수 있다")
+    void deleteTemplateByUserId_AdminCanDeleteOthersTemplate() {
+        // given
+        Long targetUserId = 10L;
+        Long adminUserId = 1L;
+        BlogTemplate template = createTemplate(7L, targetUserId, true, 3);
+
+        User adminUser = User.builder()
+                .email("admin@test.com")
+                .password("password")
+                .username("admin")
+                .role(UserRole.ADMIN)
+                .department("IT")
+                .build();
+
+        given(blogTemplateRepository.findByUserId(targetUserId)).willReturn(Optional.of(template));
+        given(userRepository.findById(adminUserId)).willReturn(Optional.of(adminUser));
+
+        // when
+        blogTemplateService.deleteTemplateByUserId(targetUserId, adminUserId);
+
+        // then
+        verify(blogTemplateRepository).deleteById(7L);
+    }
+
+    @Test
+    @DisplayName("일반 사용자는 다른 사용자의 템플릿을 삭제할 수 없다")
+    void deleteTemplateByUserId_UserCannotDeleteOthersTemplate() {
+        // given
+        Long targetUserId = 10L;
+        Long otherUserId = 2L;
+
+        User regularUser = User.builder()
+                .email("user@test.com")
+                .password("password")
+                .username("user")
+                .role(UserRole.USER)
+                .department("Sales")
+                .build();
+
+        given(userRepository.findById(otherUserId)).willReturn(Optional.of(regularUser));
+
+        // when & then
+        assertThatThrownBy(() -> blogTemplateService.deleteTemplateByUserId(targetUserId, otherUserId))
+                .isInstanceOf(BlogTemplateException.class)
+                .hasMessageContaining("본인 또는 관리자만 삭제할 수 있습니다");
+
+        verify(blogTemplateRepository, never()).deleteById(anyLong());
     }
 
     private BlogTemplate createTemplate(Long id, Long userId, boolean includeImages, int imageCount) {
