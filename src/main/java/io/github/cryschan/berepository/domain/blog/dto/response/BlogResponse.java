@@ -27,9 +27,6 @@ public class BlogResponse {
     @Schema(description = "카테고리", example = "남성 의류")
     private String category;
 
-    @Schema(description = "이미지 URL", example = "https://example.com/images/tshirt.jpg")
-    private String imgUrl;
-
     @Schema(description = "블로그 템플릿 ID", example = "1L")
     private Long blogTemplateId;
 
@@ -50,7 +47,6 @@ public class BlogResponse {
                 .title(blog.getTitle())
                 .content(blog.getContent())
                 .category(blog.getCategory())
-                .imgUrl(blog.getImgUrl())
                 .blogTemplateId(blog.getBlogTemplateId())
                 .createdAt(blog.getCreatedAt())
                 .updatedAt(blog.getUpdatedAt())
