@@ -29,7 +29,7 @@ spring:
           temperature: ${OPENAI_TEMPERATURE}
 
 server:
-  port: ${SERVER_PORT}
+  port: ${SERVER_PORT:8080}
 
 # Swagger 간단 설정
 springdoc:
