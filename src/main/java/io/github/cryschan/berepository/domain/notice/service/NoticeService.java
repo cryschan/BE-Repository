@@ -1,13 +1,14 @@
 package io.github.cryschan.berepository.domain.notice.service;
 
+import io.github.cryschan.berepository.domain.notice.dto.NoticeCreateRequest;
 import io.github.cryschan.berepository.domain.notice.dto.NoticeDetailDto;
 import io.github.cryschan.berepository.domain.notice.dto.NoticeListItemDto;
 import io.github.cryschan.berepository.domain.notice.entity.Notice;
+import io.github.cryschan.berepository.domain.notice.exception.NoticeAccessDeniedException;
 import io.github.cryschan.berepository.domain.notice.exception.NoticeNotFoundException;
 import io.github.cryschan.berepository.domain.notice.repository.NoticeRepository;
 import io.github.cryschan.berepository.domain.user.entity.role.UserRole;
 import io.github.cryschan.berepository.domain.user.repository.UserRepository;
-import io.github.cryschan.berepository.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -89,6 +90,41 @@ public class NoticeService {
                 .orElse(false);
 
         return NoticeDetailDto.from(notice, canEdit);
+    }
+
+    /**
+     * 공지사항 생성
+     *
+     * @param request 공지사항 생성 요청
+     * @param userId  인증된 사용자 ID (필수)
+     * @return 생성된 공지사항 ID
+     * @throws NoticeAccessDeniedException 관리자 권한이 없는 경우
+     */
+    @Transactional
+    public Long createNotice(NoticeCreateRequest request, Long userId) {
+        // 인증 체크
+        if (userId == null) {
+            throw new NoticeAccessDeniedException("인증이 필요합니다.");
+        }
+
+        // 관리자 권한 체크
+        boolean isAdmin = userRepository.findRoleById(userId)
+                .map(role -> role == UserRole.ADMIN)
+                .orElse(false);
+
+        if (!isAdmin) {
+            throw new NoticeAccessDeniedException("공지사항 생성은 관리자만 가능합니다.");
+        }
+
+        Notice notice = Notice.builder()
+                .title(request.title())
+                .content(request.content())
+                .isImportant(request.isImportant())
+                .build();
+
+        Notice savedNotice = noticeRepository.save(notice);
+
+        return savedNotice.getId();
     }
 
 }
