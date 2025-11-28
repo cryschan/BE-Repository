@@ -44,6 +44,12 @@ public enum ErrorCode {
     AI_INVALID_PRODUCT("AI001", "유효하지 않은 상품 정보입니다", HttpStatus.BAD_REQUEST),
     AI_EMPTY_PRODUCT_LIST("AI002", "비교할 상품이 없습니다", HttpStatus.BAD_REQUEST),
     AI_INSUFFICIENT_PRODUCTS("AI003", "비교하려면 2개 이상의 상품이 필요합니다", HttpStatus.BAD_REQUEST),
+  
+    // ==================== Fashion 도메인 (FS로 시작) ====================
+    CRAWLING_FAILED("FS001", "크롤링에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR),
+    CATEGORY_REQUIRED("FS002", "카테고리는 필수입니다", HttpStatus.BAD_REQUEST),
+    NO_PRODUCT_FOUND("FS003", "상품을 찾을 수 없습니다", HttpStatus.NOT_FOUND),
+    INVALID_CATEGORY("FS004", "유효하지 않은 카테고리입니다", HttpStatus.BAD_REQUEST),
 
     // ==================== 공통 (C로 시작) ====================
     INVALID_INPUT("C001", "입력값이 올바르지 않습니다", HttpStatus.BAD_REQUEST),

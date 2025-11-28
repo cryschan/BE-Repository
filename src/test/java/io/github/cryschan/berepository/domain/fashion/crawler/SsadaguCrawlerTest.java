@@ -1,19 +1,24 @@
 package io.github.cryschan.berepository.domain.fashion.crawler;
 
 import io.github.cryschan.berepository.domain.fashion.dto.response.SsadaguProductDto;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Disabled("실제 네트워크 크롤링 테스트 - 수동 실행 전용")
 @SpringBootTest
+@DisplayName("SsadaguCrawler 통합 테스트 (네트워크 의존)")
 class SsadaguCrawlerTest {
 
     @Autowired
     private SsadaguCrawler ssadaguCrawler;
 
     @Test
+    @DisplayName("구두 카테고리 실제 크롤링 테스트")
     void testSearchFirstProduct_구두() {
         // Given
         String category = "구두";
@@ -39,6 +44,7 @@ class SsadaguCrawlerTest {
     }
 
     @Test
+    @DisplayName("패딩 카테고리 실제 크롤링 테스트")
     void testSearchFirstProduct_패딩() {
         // Given
         String category = "패딩";
@@ -61,6 +67,7 @@ class SsadaguCrawlerTest {
     }
 
     @Test
+    @DisplayName("코트 카테고리 실제 크롤링 테스트")
     void testSearchFirstProduct_코트() {
         // Given
         String category = "코트";

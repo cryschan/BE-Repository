@@ -1,5 +1,6 @@
 package io.github.cryschan.berepository.domain.blog.service;
 
+import io.github.cryschan.berepository.domain.blog.dto.request.BlogUpdateRequest;
 import io.github.cryschan.berepository.domain.blog.dto.response.BlogPageResponse;
 import io.github.cryschan.berepository.domain.blog.dto.response.BlogResponse;
 import io.github.cryschan.berepository.domain.blog.entity.Blog;
@@ -16,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class BlogService {
 
     private final BlogRepository blogRepository;
@@ -92,6 +92,24 @@ public class BlogService {
         if (!blog.getUserId().equals(userId)) {
             throw BlogException.forbidden();
         }
+
+        return BlogResponse.from(blog);
+    }
+
+    @Transactional
+    public BlogResponse updateBlog(Long blogId, Long userId, BlogUpdateRequest request) {
+        Blog blog = blogRepository.findById(blogId)
+                .orElseThrow(() -> BlogException.notFound(String.valueOf(blogId)));
+
+        if (!blog.getUserId().equals(userId)) {
+            throw BlogException.forbidden("해당 블로그를 수정할 권한이 없습니다");
+        }
+
+        blog.update(
+                request.getTitle(),
+                request.getContent(),
+                request.getCategory()
+        );
 
         return BlogResponse.from(blog);
     }
