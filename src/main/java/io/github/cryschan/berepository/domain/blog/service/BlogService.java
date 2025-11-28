@@ -108,8 +108,7 @@ public class BlogService {
         blog.update(
                 request.getTitle(),
                 request.getContent(),
-                request.getCategory(),
-                request.getBlogTemplateId()
+                request.getCategory()
         );
 
         return BlogResponse.from(blog);

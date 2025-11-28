@@ -71,10 +71,9 @@ public class Blog {
         this.category = category;
     }
 
-    public void update(String title, String content, String category, Long blogTemplateId) {
+    public void update(String title, String content, String category) {
         this.title = title;
         this.content = content;
         this.category = category;
-        this.blogTemplateId = blogTemplateId;
     }
 }
