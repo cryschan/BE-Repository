@@ -2,6 +2,7 @@ package io.github.cryschan.berepository.domain.blog.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -38,5 +39,6 @@ public class BlogUpdateRequest {
     private String category;
 
     @Schema(description = "블로그 템플릿 ID", example = "1")
+    @NotNull(message = "블로그 템플릿 ID는 필수입니다")
     private Long blogTemplateId;
 }

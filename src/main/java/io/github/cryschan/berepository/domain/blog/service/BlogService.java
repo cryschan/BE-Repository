@@ -96,6 +96,7 @@ public class BlogService {
         return BlogResponse.from(blog);
     }
 
+    @Transactional
     public BlogResponse updateBlog(Long blogId, Long userId, BlogUpdateRequest request) {
         Blog blog = blogRepository.findById(blogId)
                 .orElseThrow(() -> BlogException.notFound(String.valueOf(blogId)));
