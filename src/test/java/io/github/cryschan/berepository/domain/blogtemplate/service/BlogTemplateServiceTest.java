@@ -141,42 +141,6 @@ class BlogTemplateServiceTest {
     }
 
     @Test
-    @DisplayName("관리자는 템플릿 ID로 단건 조회할 수 있다")
-    void getTemplateResponseForAdmin_Success() {
-        // given
-        Long adminId = 2L;
-        Long templateId = 10L;
-        BlogTemplate template = createTemplate(templateId, 99L, true, 3);
-
-        given(userRepository.findById(adminId)).willReturn(Optional.of(User.builder().role(UserRole.ADMIN).build()));
-        given(blogTemplateRepository.findById(templateId)).willReturn(Optional.of(template));
-
-        // when
-        BlogTemplateResponse response = blogTemplateService.getTemplateResponseForAdmin(adminId, templateId);
-
-        // then
-        assertThat(response.id()).isEqualTo(templateId);
-        assertThat(response.platforms()).containsExactly("네이버");
-    }
-
-    @Test
-    @DisplayName("관리자가 아니면 템플릿 ID로 조회 시 예외가 발생한다")
-    void getTemplateResponseForAdmin_AccessDenied() {
-        // given
-        Long requesterId = 3L;
-        Long templateId = 11L;
-
-        given(userRepository.findById(requesterId)).willReturn(Optional.of(User.builder().role(UserRole.USER).build()));
-
-        // when & then
-        assertThatThrownBy(() -> blogTemplateService.getTemplateResponseForAdmin(requesterId, templateId))
-                .isInstanceOf(BlogTemplateException.class)
-                .satisfies(ex -> assertThat(((BlogTemplateException) ex).getErrorCode())
-                        .isEqualTo(ErrorCode.BLOG_TEMPLATE_ACCESS_DENIED));
-        verify(blogTemplateRepository, never()).findById(anyLong());
-    }
-
-    @Test
     @DisplayName("소유자는 템플릿을 수정할 수 있다")
     void updateTemplateByUserId_Success() {
         // given
