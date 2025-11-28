@@ -40,6 +40,12 @@ public enum ErrorCode {
     INVALID_BLOG_REQUEST("BL004", "잘못된 블로그 요청입니다", HttpStatus.BAD_REQUEST),
     BLOG_ACCESS_DENIED("BL005", "이 블로그에 접근할 권한이 없습니다", HttpStatus.FORBIDDEN),
 
+    // ==================== Fashion 도메인 (FS로 시작) ====================
+    CRAWLING_FAILED("FS001", "크롤링에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR),
+    CATEGORY_REQUIRED("FS002", "카테고리는 필수입니다", HttpStatus.BAD_REQUEST),
+    NO_PRODUCT_FOUND("FS003", "상품을 찾을 수 없습니다", HttpStatus.NOT_FOUND),
+    INVALID_CATEGORY("FS004", "유효하지 않은 카테고리입니다", HttpStatus.BAD_REQUEST),
+
     // ==================== 공통 (C로 시작) ====================
     INVALID_INPUT("C001", "입력값이 올바르지 않습니다", HttpStatus.BAD_REQUEST),
     INVALID_REQUEST("C002", "잘못된 요청입니다", HttpStatus.BAD_REQUEST),

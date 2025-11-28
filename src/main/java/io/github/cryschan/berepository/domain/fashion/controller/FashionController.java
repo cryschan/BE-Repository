@@ -1,61 +1,142 @@
 package io.github.cryschan.berepository.domain.fashion.controller;
 
+import io.github.cryschan.berepository.domain.blogtemplate.dto.BlogContentGenerationRequest;
+import io.github.cryschan.berepository.domain.blogtemplate.entity.BlogTemplate;
+import io.github.cryschan.berepository.domain.blogtemplate.exception.BlogTemplateException;
+import io.github.cryschan.berepository.domain.blogtemplate.repository.BlogTemplateRepository;
 import io.github.cryschan.berepository.domain.fashion.dto.response.SsadaguProductDto;
 import io.github.cryschan.berepository.domain.fashion.service.FashionCrawlerService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "Fashion", description = "패션 상품 크롤링 API (테스트용, 로그인 필수)")
+@Tag(name = "크롤링", description = "패션 상품 크롤링 API")
 @SecurityRequirement(name = "Bearer Authentication")
 @RequiredArgsConstructor
-@RequestMapping("/api/keyword")
+@RequestMapping("/api/crawling")
 @RestController
 public class FashionController {
 
     private final FashionCrawlerService fashionCrawlerService;
+    private final BlogTemplateRepository blogTemplateRepository;
 
     @Operation(
-            summary = "패션 상품 크롤링 테스트 (전체 플로우)",
+            summary = "사용자 템플릿 기반 상품 크롤링",
             description = """
-                    **전체 크롤링 프로세스를 테스트합니다:**
-                    1. 무신사 랭킹에서 상위 N개 상품 URL 수집
-                    2. 각 상품 페이지에서 카테고리 추출 (예: 숏패딩, 어그부츠)
-                    3. 추출한 카테고리로 싸다구 검색
-                    4. 싸다구 첫 번째 상품 정보 수집 (이름, 가격, 별점, 이미지)
+                    **로그인한 사용자의 블로그 템플릿을 기반으로 상품을 크롤링합니다.**
 
-                    **주의:** DB에 저장하지 않고 즉시 반환만 합니다. (테스트용)
+                    ### 동작 방식:
+                    1. 사용자의 블로그 템플릿 조회
+                    2. 템플릿에 설정된 카테고리로 싸다구에서 상품 크롤링
+                    3. 템플릿 설정 + 크롤링 결과를 합쳐서 반환
+
+                    ### 반환 데이터:
+                    - 사용자 정보 (userId, templateTitle)
+                    - 템플릿 설정 (charLimit, includeImages, imageCount, platforms)
+                    - 크롤링된 상품 정보 (crawledProducts)
+
+                    **이 데이터는 AI 블로그 글 생성에 사용됩니다.**
                     """
     )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "크롤링 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BlogContentGenerationRequest.class),
+                            examples = @ExampleObject(
+                                    name = "크롤링 성공 예시",
+                                    value = """
+                                            {
+                                              "userId": 1,
+                                              "templateTitle": "패션 아이템 추천",
+                                              "charLimit": 1000,
+                                              "includeImages": true,
+                                              "imageCount": 3,
+                                              "platforms": ["티스토리", "네이버"],
+                                              "crawledProducts": [
+                                                {
+                                                  "productName": "남성 숏패딩",
+                                                  "productUrl": "https://ssadagu.kr/shop/view.php?idx=12345",
+                                                  "price": 29900,
+                                                  "rating": 4.5,
+                                                  "reviewCount": null,
+                                                  "imageUrl": "https://example.com/image.jpg",
+                                                  "category": "패딩",
+                                                  "productAttributes": {
+                                                    "인기 요소": "캐주얼",
+                                                    "소재": "폴리에스터"
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "리소스를 찾을 수 없음 (블로그 템플릿 또는 상품)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = {
+                                    @ExampleObject(
+                                            name = "블로그 템플릿 없음",
+                                            value = """
+                                                    {
+                                                      "errorCode": "BT001",
+                                                      "message": "블로그 템플릿을 찾을 수 없습니다. User ID: 1"
+                                                    }
+                                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "상품 없음",
+                                            value = """
+                                                    {
+                                                      "errorCode": "FS003",
+                                                      "message": "'패딩' 카테고리에서 상품을 찾을 수 없습니다"
+                                                    }
+                                                    """
+                                    )
+                            }
+                    )
+            )
+    })
     @ResponseStatus(HttpStatus.OK)
-    @PostMapping("/fashion/crawl")
-    public List<SsadaguProductDto> crawlProducts(
-            @Parameter(description = "크롤링할 상품 개수 (기본값: 5)", example = "3")
-            @RequestParam(required = false) Integer limit
+    @PostMapping("/fashion")
+    public BlogContentGenerationRequest crawlFashionProducts(
+            @AuthenticationPrincipal Long userId
     ) {
-        return fashionCrawlerService.crawlProductsFromTrending(limit);
-    }
 
-    @Operation(
-            summary = "카테고리별 상품 검색 테스트",
-            description = """
-                    특정 카테고리로 싸다구에서 상품을 검색합니다.
+        // 1. 사용자의 블로그 템플릿 조회
+        BlogTemplate template = blogTemplateRepository.findByUserId(userId)
+                .orElseThrow(() -> BlogTemplateException.notFoundByUserId(userId));
 
-                    **예시:** category=패딩, category=구두
-                    """
-    )
-    @ResponseStatus(HttpStatus.OK)
-    @GetMapping("/fashion/search")
-    public SsadaguProductDto searchByCategory(
-            @Parameter(description = "검색할 카테고리", example = "패딩", required = true)
-            @RequestParam String category
-    ) {
-        return fashionCrawlerService.searchProductByCategory(category);
+        // 2. 템플릿의 카테고리로 상품 크롤링
+        List<SsadaguProductDto> crawledProducts = fashionCrawlerService
+                .crawlProductsByCategories(template.getCategories());
+
+        // 3. 템플릿 설정과 크롤링 결과를 합쳐서 BlogContentGenerationRequest 생성
+        return BlogContentGenerationRequest.builder()
+                .userId(template.getUserId())
+                .templateTitle(template.getTitle())
+                .charLimit(template.getCharLimit())
+                .includeImages(template.isIncludeImages())
+                .imageCount(template.getImageCount())
+                .platforms(template.getPlatforms())
+                .crawledProducts(crawledProducts)
+                .build();
     }
 }
