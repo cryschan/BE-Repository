@@ -353,30 +353,21 @@ class UserServiceTest {
         @Test
         @DisplayName("성공: 토큰 삭제")
         void logout_Success() {
-            // given
-            RefreshToken refreshTokenEntity = Mockito.mock(RefreshToken.class);
-            given(tokenRepository.findByToken(anyString())).willReturn(Optional.of(refreshTokenEntity));
-
             // when
             userService.logout(refreshTokenRequest);
 
-            // then
-            verify(tokenRepository).findByToken(refreshToken);
-            verify(tokenRepository).delete(refreshTokenEntity);
+            // then - deleteByToken 커스텀 메서드 호출 검증
+            verify(tokenRepository).deleteByToken(refreshToken);
         }
 
         @Test
         @DisplayName("성공: 존재하지 않는 토큰도 에러 없이 처리")
         void logout_Success_TokenNotFound() {
-            // given
-            given(tokenRepository.findByToken(anyString())).willReturn(Optional.empty());
-
-            // when
+            // when - deleteByToken은 토큰이 없어도 예외 없이 처리됨
             userService.logout(refreshTokenRequest);
 
             // then
-            verify(tokenRepository).findByToken(refreshToken);
-            verify(tokenRepository, never()).delete(any(RefreshToken.class));
+            verify(tokenRepository).deleteByToken(refreshToken);
         }
     }
 

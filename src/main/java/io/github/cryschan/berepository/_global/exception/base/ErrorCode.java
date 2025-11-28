@@ -40,6 +40,11 @@ public enum ErrorCode {
     INVALID_BLOG_REQUEST("BL004", "잘못된 블로그 요청입니다", HttpStatus.BAD_REQUEST),
     BLOG_ACCESS_DENIED("BL005", "이 블로그에 접근할 권한이 없습니다", HttpStatus.FORBIDDEN),
 
+    // ==================== AI 도메인 (AI로 시작) ====================
+    AI_INVALID_PRODUCT("AI001", "유효하지 않은 상품 정보입니다", HttpStatus.BAD_REQUEST),
+    AI_EMPTY_PRODUCT_LIST("AI002", "비교할 상품이 없습니다", HttpStatus.BAD_REQUEST),
+    AI_INSUFFICIENT_PRODUCTS("AI003", "비교하려면 2개 이상의 상품이 필요합니다", HttpStatus.BAD_REQUEST),
+
     // ==================== 공통 (C로 시작) ====================
     INVALID_INPUT("C001", "입력값이 올바르지 않습니다", HttpStatus.BAD_REQUEST),
     INVALID_REQUEST("C002", "잘못된 요청입니다", HttpStatus.BAD_REQUEST),
