@@ -208,7 +208,7 @@ public class DashboardService {
      * 대시보드 데이터를 계산하여 DB에 저장
      * 스케줄러에서 호출하여 매일 자정에 실행
      *
-     * @param date 저장할 날짜 (LocalDateTime - 해당 날짜의 00:00:00)
+     * @param date        저장할 날짜 (LocalDateTime - 해당 날짜의 00:00:00)
      * @param adminUserId 관리자 사용자 ID (스케줄러 호출 시 null 가능)
      * @throws RuntimeException 데이터 계산 또는 저장 실패 시
      */
