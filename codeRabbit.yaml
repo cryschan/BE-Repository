@@ -1,0 +1,82 @@
+version: 2
+
+# =======================================
+# 📌 리뷰 기본 설정 (가장 중요)
+# =======================================
+reviews:
+  auto_review: true             # PR 생성 시 자동 리뷰
+  review_level: high            # 한 줄 한 줄 꼼꼼한 리뷰
+  review_status: true
+  run_on_push: true             # push할 때도 리뷰 (중요)
+  run_on_draft: true            # draft PR도 체크
+  run_on_fork: true
+
+# =======================================
+# 📌 diff 기반 상세 리뷰
+# =======================================
+diff:
+  review_diff_only: true        # 변경된 코드 라인만 집중 리뷰
+  comment_on_every_diff: true   # diff 대부분 라인에 코멘트
+
+# =======================================
+# 📌 커밋 단위 리뷰
+# =======================================
+commits:
+  analyze_commits: true
+  comment_on_commits: true
+
+# =======================================
+# 📌 Inline comments 규칙
+# =======================================
+comments:
+  enable_inline: true
+  require_changes: false         # 문제 있으면 반드시 수정 요청
+  max_comments: 200
+
+# =======================================
+# 📌 리뷰 대상 파일 (FE + BE + Crawler + Scripts)
+# =======================================
+path_includes:
+  - "src/**/*.ts"
+  - "src/**/*.tsx"
+  - "src/**/*.js"
+  - "src/**/*.jsx"
+  - "src/**/*.py"
+  - "src/**/*.java"
+  - "src/**/*.kt"
+
+# =======================================
+# 📌 리뷰 제외 경로(꼭 넣어야 함)
+# =======================================
+path_excludes:
+  - "node_modules/**"
+  - "frontend/node_modules/**"
+  - "backend/node_modules/**"
+  - "ai-service/__pycache__/**"
+  - "**/__pycache__/**"
+  - "**/dist/**"
+  - "**/build/**"
+  - "**/.next/**"
+  - "**/coverage/**"
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+  - "**/*.mock.ts"
+  - "tmp/**"
+  - "logs/**"
+  - "data/**"
+  - ".vscode/**"
+  - ".idea/**"
+
+# =======================================
+# 📌 언어별 추가 규칙 (고급)
+# =======================================
+language_rules:
+  typescript:
+    enforce_explicit_types: true     # 암시적 any 금지
+    check_unused_imports: true
+    check_null_safety: true
+    check_async_await: true          # await 누락 감지
+  java:
+    check_nullability_annotations: true
+    enforce_access_modifiers: true
+    check_stream_usage: true
