@@ -104,39 +104,90 @@ class BlogTemplateServiceTest {
     }
 
     @Test
-    @DisplayName("관리자는 다른 사용자의 템플릿을 조회할 수 있다")
+    @DisplayName("본인은 자신의 템플릿을 조회할 수 있다")
+    void getTemplateResponseByUserId_OwnerSuccess() {
+        // given
+        Long userId = 1L;
+        BlogTemplate template = createTemplate(100L, userId, true, 2);
+
+        given(blogTemplateRepository.findByUserId(userId)).willReturn(Optional.of(template));
+
+        // when
+        BlogTemplateResponse response = blogTemplateService.getTemplateResponseByUserId(userId, userId);
+
+        // then
+        assertThat(response.id()).isEqualTo(100L);
+        assertThat(response.platforms()).containsExactly("네이버");
+        verify(blogTemplateRepository).findByUserId(userId);
+    }
+
+    @Test
+    @DisplayName("관리자는 다른 사용자의 템플릿을 사용자 ID로 조회할 수 있다")
     void getTemplateResponseByUserId_AdminSuccess() {
         // given
-        Long targetUserId = 1L;
         Long adminId = 2L;
-        BlogTemplate template = createTemplate(100L, targetUserId, true, 2);
+        Long targetUserId = 1L;
+        BlogTemplate template = createTemplate(101L, targetUserId, true, 2);
 
-        given(userRepository.findById(adminId))
-                .willReturn(Optional.of(User.builder().role(UserRole.ADMIN).build()));
+        given(userRepository.findById(adminId)).willReturn(Optional.of(User.builder().role(UserRole.ADMIN).build()));
         given(blogTemplateRepository.findByUserId(targetUserId)).willReturn(Optional.of(template));
 
         // when
         BlogTemplateResponse response = blogTemplateService.getTemplateResponseByUserId(targetUserId, adminId);
 
         // then
-        assertThat(response.id()).isEqualTo(100L);
+        assertThat(response.id()).isEqualTo(101L);
         assertThat(response.platforms()).containsExactly("네이버");
-        verify(blogTemplateRepository).findByUserId(targetUserId);
+    }
+
+    @Test
+    @DisplayName("관리자는 템플릿 ID로 단건 조회할 수 있다")
+    void getTemplateResponseForAdmin_Success() {
+        // given
+        Long adminId = 2L;
+        Long templateId = 10L;
+        BlogTemplate template = createTemplate(templateId, 99L, true, 3);
+
+        given(userRepository.findById(adminId)).willReturn(Optional.of(User.builder().role(UserRole.ADMIN).build()));
+        given(blogTemplateRepository.findById(templateId)).willReturn(Optional.of(template));
+
+        // when
+        BlogTemplateResponse response = blogTemplateService.getTemplateResponseForAdmin(adminId, templateId);
+
+        // then
+        assertThat(response.id()).isEqualTo(templateId);
+        assertThat(response.platforms()).containsExactly("네이버");
+    }
+
+    @Test
+    @DisplayName("관리자가 아니면 템플릿 ID로 조회 시 예외가 발생한다")
+    void getTemplateResponseForAdmin_AccessDenied() {
+        // given
+        Long requesterId = 3L;
+        Long templateId = 11L;
+
+        given(userRepository.findById(requesterId)).willReturn(Optional.of(User.builder().role(UserRole.USER).build()));
+
+        // when & then
+        assertThatThrownBy(() -> blogTemplateService.getTemplateResponseForAdmin(requesterId, templateId))
+                .isInstanceOf(BlogTemplateException.class)
+                .satisfies(ex -> assertThat(((BlogTemplateException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.BLOG_TEMPLATE_ACCESS_DENIED));
+        verify(blogTemplateRepository, never()).findById(anyLong());
     }
 
     @Test
     @DisplayName("소유자는 템플릿을 수정할 수 있다")
-    void updateTemplateResponse_SuccessForOwner() {
+    void updateTemplateByUserId_Success() {
         // given
-        Long templateId = 5L;
-        Long ownerId = 10L;
-        BlogTemplate template = createTemplate(templateId, ownerId, true, 3);
-        given(blogTemplateRepository.findById(templateId)).willReturn(Optional.of(template));
+        Long userId = 10L;
+        BlogTemplate template = createTemplate(5L, userId, true, 3);
+        given(blogTemplateRepository.findByUserId(userId)).willReturn(Optional.of(template));
 
         // when
-        BlogTemplateResponse response = blogTemplateService.updateTemplateResponse(
-                ownerId,
-                templateId,
+        BlogTemplateResponse response = blogTemplateService.updateTemplateByUserId(
+                userId,
+                userId,
                 "수정된 제목",
                 List.of("여행"),
                 List.of("인스타그램"),
@@ -157,38 +208,32 @@ class BlogTemplateServiceTest {
     }
 
     @Test
-    @DisplayName("소유자나 관리자가 아니면 템플릿 삭제 시 예외가 발생한다")
-    void deleteTemplate_AccessDenied() {
+    @DisplayName("소유자는 자신의 템플릿을 삭제할 수 있다")
+    void deleteTemplateByUserId_Success() {
         // given
-        Long templateId = 7L;
-        BlogTemplate template = createTemplate(templateId, 1L, true, 3);
+        Long userId = 1L;
+        BlogTemplate template = createTemplate(7L, userId, true, 3);
 
-        given(blogTemplateRepository.findById(templateId)).willReturn(Optional.of(template));
-        given(userRepository.findById(2L))
-                .willReturn(Optional.of(User.builder().role(UserRole.USER).build()));
+        given(blogTemplateRepository.findByUserId(userId)).willReturn(Optional.of(template));
 
-        // when & then
-        assertThatThrownBy(() -> blogTemplateService.deleteTemplate(templateId, 2L))
-                .isInstanceOf(BlogTemplateException.class);
-        verify(blogTemplateRepository, never()).deleteById(anyLong());
+        // when
+        blogTemplateService.deleteTemplateByUserId(userId, userId);
+
+        // then
+        verify(blogTemplateRepository).deleteById(7L);
     }
 
     @Test
-    @DisplayName("관리자는 템플릿을 삭제할 수 있다")
-    void deleteTemplate_AdminSuccess() {
+    @DisplayName("존재하지 않는 사용자의 템플릿 삭제 시 예외가 발생한다")
+    void deleteTemplateByUserId_NotFound() {
         // given
-        Long templateId = 8L;
-        BlogTemplate template = createTemplate(templateId, 1L, true, 3);
+        Long userId = 999L;
+        given(blogTemplateRepository.findByUserId(userId)).willReturn(Optional.empty());
 
-        given(blogTemplateRepository.findById(templateId)).willReturn(Optional.of(template));
-        given(userRepository.findById(2L))
-                .willReturn(Optional.of(User.builder().role(UserRole.ADMIN).build()));
-
-        // when
-        blogTemplateService.deleteTemplate(templateId, 2L);
-
-        // then
-        verify(blogTemplateRepository).deleteById(templateId);
+        // when & then
+        assertThatThrownBy(() -> blogTemplateService.deleteTemplateByUserId(userId, userId))
+                .isInstanceOf(BlogTemplateException.class);
+        verify(blogTemplateRepository, never()).deleteById(anyLong());
     }
 
     @Test
@@ -264,17 +309,16 @@ class BlogTemplateServiceTest {
 
     @Test
     @DisplayName("카테고리나 플랫폼이 null로 들어와도 빈 리스트로 처리해 업데이트된다")
-    void updateTemplate_NullCollectionsHandled() {
+    void updateTemplateByUserId_NullCollectionsHandled() {
         // given
-        Long templateId = 12L;
-        Long ownerId = 44L;
-        BlogTemplate template = createTemplate(templateId, ownerId, true, 2);
-        given(blogTemplateRepository.findById(templateId)).willReturn(Optional.of(template));
+        Long userId = 44L;
+        BlogTemplate template = createTemplate(12L, userId, true, 2);
+        given(blogTemplateRepository.findByUserId(userId)).willReturn(Optional.of(template));
 
         // when
-        BlogTemplateResponse response = blogTemplateService.updateTemplateResponse(
-                ownerId,
-                templateId,
+        BlogTemplateResponse response = blogTemplateService.updateTemplateByUserId(
+                userId,
+                userId,
                 "제목",
                 null,
                 null,
@@ -290,6 +334,129 @@ class BlogTemplateServiceTest {
         assertThat(response.platforms()).isEmpty();
         assertThat(response.includeImages()).isFalse();
         assertThat(response.imageCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("관리자는 다른 사용자의 템플릿을 수정할 수 있다")
+    void updateTemplateByUserId_AdminCanUpdateOthersTemplate() {
+        // given
+        Long targetUserId = 10L;
+        Long adminUserId = 1L;
+        BlogTemplate template = createTemplate(5L, targetUserId, true, 3);
+
+        User adminUser = User.builder()
+                .email("admin@test.com")
+                .password("password")
+                .username("admin")
+                .role(UserRole.ADMIN)
+                .department("IT")
+                .build();
+
+        given(blogTemplateRepository.findByUserId(targetUserId)).willReturn(Optional.of(template));
+        given(userRepository.findById(adminUserId)).willReturn(Optional.of(adminUser));
+
+        // when
+        BlogTemplateResponse response = blogTemplateService.updateTemplateByUserId(
+                targetUserId,
+                adminUserId,
+                "관리자가 수정",
+                List.of("여행"),
+                List.of("인스타그램"),
+                "https://shop2.com",
+                false,
+                0,
+                1500,
+                LocalTime.NOON
+        );
+
+        // then
+        assertThat(template.getTitle()).isEqualTo("관리자가 수정");
+        assertThat(response.title()).isEqualTo("관리자가 수정");
+    }
+
+    @Test
+    @DisplayName("일반 사용자는 다른 사용자의 템플릿을 수정할 수 없다")
+    void updateTemplateByUserId_UserCannotUpdateOthersTemplate() {
+        // given
+        Long targetUserId = 10L;
+        Long otherUserId = 2L;
+
+        User regularUser = User.builder()
+                .email("user@test.com")
+                .password("password")
+                .username("user")
+                .role(UserRole.USER)
+                .department("Sales")
+                .build();
+
+        given(userRepository.findById(otherUserId)).willReturn(Optional.of(regularUser));
+
+        // when & then
+        assertThatThrownBy(() -> blogTemplateService.updateTemplateByUserId(
+                targetUserId,
+                otherUserId,
+                "수정 시도",
+                List.of("여행"),
+                List.of("인스타그램"),
+                "https://shop2.com",
+                false,
+                0,
+                1500,
+                LocalTime.NOON
+        ))
+                .isInstanceOf(BlogTemplateException.class)
+                .hasMessageContaining("본인 또는 관리자만 수정할 수 있습니다");
+    }
+
+    @Test
+    @DisplayName("관리자는 다른 사용자의 템플릿을 삭제할 수 있다")
+    void deleteTemplateByUserId_AdminCanDeleteOthersTemplate() {
+        // given
+        Long targetUserId = 10L;
+        Long adminUserId = 1L;
+        BlogTemplate template = createTemplate(7L, targetUserId, true, 3);
+
+        User adminUser = User.builder()
+                .email("admin@test.com")
+                .password("password")
+                .username("admin")
+                .role(UserRole.ADMIN)
+                .department("IT")
+                .build();
+
+        given(blogTemplateRepository.findByUserId(targetUserId)).willReturn(Optional.of(template));
+        given(userRepository.findById(adminUserId)).willReturn(Optional.of(adminUser));
+
+        // when
+        blogTemplateService.deleteTemplateByUserId(targetUserId, adminUserId);
+
+        // then
+        verify(blogTemplateRepository).deleteById(7L);
+    }
+
+    @Test
+    @DisplayName("일반 사용자는 다른 사용자의 템플릿을 삭제할 수 없다")
+    void deleteTemplateByUserId_UserCannotDeleteOthersTemplate() {
+        // given
+        Long targetUserId = 10L;
+        Long otherUserId = 2L;
+
+        User regularUser = User.builder()
+                .email("user@test.com")
+                .password("password")
+                .username("user")
+                .role(UserRole.USER)
+                .department("Sales")
+                .build();
+
+        given(userRepository.findById(otherUserId)).willReturn(Optional.of(regularUser));
+
+        // when & then
+        assertThatThrownBy(() -> blogTemplateService.deleteTemplateByUserId(targetUserId, otherUserId))
+                .isInstanceOf(BlogTemplateException.class)
+                .hasMessageContaining("본인 또는 관리자만 삭제할 수 있습니다");
+
+        verify(blogTemplateRepository, never()).deleteById(anyLong());
     }
 
     private BlogTemplate createTemplate(Long id, Long userId, boolean includeImages, int imageCount) {
