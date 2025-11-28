@@ -10,6 +10,9 @@ reviews:
   run_on_push: true             # push할 때도 리뷰 (중요)
   run_on_draft: true            # draft PR도 체크
   run_on_fork: true
+  language: ko
+
+
 
 # =======================================
 # 📌 diff 기반 상세 리뷰
