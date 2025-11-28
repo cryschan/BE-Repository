@@ -1,10 +1,6 @@
 package io.github.cryschan.berepository.domain.fashion.controller;
 
 import io.github.cryschan.berepository.domain.blogtemplate.dto.BlogContentGenerationRequest;
-import io.github.cryschan.berepository.domain.blogtemplate.entity.BlogTemplate;
-import io.github.cryschan.berepository.domain.blogtemplate.exception.BlogTemplateException;
-import io.github.cryschan.berepository.domain.blogtemplate.repository.BlogTemplateRepository;
-import io.github.cryschan.berepository.domain.fashion.dto.response.SsadaguProductDto;
 import io.github.cryschan.berepository.domain.fashion.service.FashionCrawlerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -19,8 +15,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @Tag(name = "크롤링", description = "패션 상품 크롤링 API")
 @SecurityRequirement(name = "Bearer Authentication")
 @RequiredArgsConstructor
@@ -29,7 +23,6 @@ import java.util.List;
 public class FashionController {
 
     private final FashionCrawlerService fashionCrawlerService;
-    private final BlogTemplateRepository blogTemplateRepository;
 
     @Operation(
             summary = "사용자 템플릿 기반 상품 크롤링",
@@ -119,24 +112,6 @@ public class FashionController {
     public BlogContentGenerationRequest crawlFashionProducts(
             @AuthenticationPrincipal Long userId
     ) {
-
-        // 1. 사용자의 블로그 템플릿 조회
-        BlogTemplate template = blogTemplateRepository.findByUserId(userId)
-                .orElseThrow(() -> BlogTemplateException.notFoundByUserId(userId));
-
-        // 2. 템플릿의 카테고리로 상품 크롤링
-        List<SsadaguProductDto> crawledProducts = fashionCrawlerService
-                .crawlProductsByCategories(template.getCategories());
-
-        // 3. 템플릿 설정과 크롤링 결과를 합쳐서 BlogContentGenerationRequest 생성
-        return BlogContentGenerationRequest.builder()
-                .userId(template.getUserId())
-                .templateTitle(template.getTitle())
-                .charLimit(template.getCharLimit())
-                .includeImages(template.isIncludeImages())
-                .imageCount(template.getImageCount())
-                .platforms(template.getPlatforms())
-                .crawledProducts(crawledProducts)
-                .build();
+        return fashionCrawlerService.generateBlogContentRequest(userId);
     }
 }

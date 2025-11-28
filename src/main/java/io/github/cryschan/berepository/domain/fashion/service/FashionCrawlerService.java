@@ -1,5 +1,9 @@
 package io.github.cryschan.berepository.domain.fashion.service;
 
+import io.github.cryschan.berepository.domain.blogtemplate.dto.BlogContentGenerationRequest;
+import io.github.cryschan.berepository.domain.blogtemplate.entity.BlogTemplate;
+import io.github.cryschan.berepository.domain.blogtemplate.exception.BlogTemplateException;
+import io.github.cryschan.berepository.domain.blogtemplate.repository.BlogTemplateRepository;
 import io.github.cryschan.berepository.domain.fashion.crawler.MusinsaProductDetailCrawler;
 import io.github.cryschan.berepository.domain.fashion.crawler.MusinsaRankingCrawler;
 import io.github.cryschan.berepository.domain.fashion.crawler.SsadaguCrawler;
@@ -23,6 +27,7 @@ public class FashionCrawlerService {
     private final MusinsaRankingCrawler musinsaRankingCrawler;
     private final MusinsaProductDetailCrawler musinsaProductDetailCrawler;
     private final SsadaguCrawler ssadaguCrawler;
+    private final BlogTemplateRepository blogTemplateRepository;
 
     /**
      * 무신사 랭킹에서 카테고리를 추출하고, 싸다구에서 상품을 검색
@@ -136,5 +141,42 @@ public class FashionCrawlerService {
 
         log.info("크롤링 완료. 총 {} 개 상품 수집", products.size());
         return products;
+    }
+
+    /**
+     * 사용자 템플릿 기반 상품 크롤링 및 블로그 생성 요청 데이터 생성
+     * 1. 사용자의 블로그 템플릿 조회
+     * 2. 템플릿의 카테고리로 상품 크롤링
+     * 3. 템플릿 설정과 크롤링 결과를 합쳐서 BlogContentGenerationRequest 생성
+     *
+     * @param userId 사용자 ID
+     * @return 블로그 생성 요청 데이터
+     * @throws BlogTemplateException 블로그 템플릿을 찾을 수 없는 경우
+     */
+    public BlogContentGenerationRequest generateBlogContentRequest(Long userId) {
+        log.info("사용자 {}의 템플릿 기반 크롤링 시작", userId);
+
+        // 1. 사용자의 블로그 템플릿 조회
+        BlogTemplate template = blogTemplateRepository.findByUserId(userId)
+                .orElseThrow(() -> BlogTemplateException.notFoundByUserId(userId));
+        log.debug("템플릿 조회 성공: {} (카테고리: {})", template.getTitle(), template.getCategories());
+
+        // 2. 템플릿의 카테고리로 상품 크롤링
+        List<SsadaguProductDto> crawledProducts = crawlProductsByCategories(template.getCategories());
+        log.info("총 {} 개 상품 크롤링 완료", crawledProducts.size());
+
+        // 3. 템플릿 설정과 크롤링 결과를 합쳐서 BlogContentGenerationRequest 생성
+        BlogContentGenerationRequest request = BlogContentGenerationRequest.builder()
+                .userId(template.getUserId())
+                .templateTitle(template.getTitle())
+                .charLimit(template.getCharLimit())
+                .includeImages(template.isIncludeImages())
+                .imageCount(template.getImageCount())
+                .platforms(template.getPlatforms())
+                .crawledProducts(crawledProducts)
+                .build();
+
+        log.info("블로그 생성 요청 데이터 생성 완료: userId={}, products={}", userId, crawledProducts.size());
+        return request;
     }
 }

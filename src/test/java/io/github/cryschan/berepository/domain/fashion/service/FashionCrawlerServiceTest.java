@@ -1,5 +1,9 @@
 package io.github.cryschan.berepository.domain.fashion.service;
 
+import io.github.cryschan.berepository.domain.blogtemplate.dto.BlogContentGenerationRequest;
+import io.github.cryschan.berepository.domain.blogtemplate.entity.BlogTemplate;
+import io.github.cryschan.berepository.domain.blogtemplate.exception.BlogTemplateException;
+import io.github.cryschan.berepository.domain.blogtemplate.repository.BlogTemplateRepository;
 import io.github.cryschan.berepository.domain.fashion.crawler.SsadaguCrawler;
 import io.github.cryschan.berepository.domain.fashion.dto.response.SsadaguProductDto;
 import io.github.cryschan.berepository.domain.fashion.exception.FashionException;
@@ -12,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -25,6 +30,9 @@ class FashionCrawlerServiceTest {
 
     @Mock
     private SsadaguCrawler ssadaguCrawler;
+
+    @Mock
+    private BlogTemplateRepository blogTemplateRepository;
 
     @InjectMocks
     private FashionCrawlerService fashionCrawlerService;
@@ -153,6 +161,91 @@ class FashionCrawlerServiceTest {
         assertThat(results).hasSize(2);
         assertThat(results.get(0).category()).isEqualTo("패딩");
         assertThat(results.get(1).category()).isEqualTo("구두");
+    }
+
+    @Test
+    @DisplayName("사용자 템플릿 기반 블로그 생성 요청 데이터 생성 성공")
+    void generateBlogContentRequest_Success() {
+        // given
+        Long userId = 1L;
+        BlogTemplate template = BlogTemplate.builder()
+                .userId(userId)
+                .title("패션 아이템 추천")
+                .charLimit(1000)
+                .includeImages(true)
+                .imageCount(3)
+                .platforms(List.of("티스토리", "네이버"))
+                .categories(List.of("패딩", "구두"))
+                .build();
+
+        given(blogTemplateRepository.findByUserId(userId))
+                .willReturn(Optional.of(template));
+        given(ssadaguCrawler.searchFirstProduct("패딩"))
+                .willReturn(createMockProduct("패딩"));
+        given(ssadaguCrawler.searchFirstProduct("구두"))
+                .willReturn(createMockProduct("구두"));
+
+        // when
+        BlogContentGenerationRequest result = fashionCrawlerService.generateBlogContentRequest(userId);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.userId()).isEqualTo(userId);
+        assertThat(result.templateTitle()).isEqualTo("패션 아이템 추천");
+        assertThat(result.charLimit()).isEqualTo(1000);
+        assertThat(result.includeImages()).isTrue();
+        assertThat(result.imageCount()).isEqualTo(3);
+        assertThat(result.platforms()).containsExactly("티스토리", "네이버");
+        assertThat(result.crawledProducts()).hasSize(2);
+        assertThat(result.crawledProducts().get(0).category()).isEqualTo("패딩");
+        assertThat(result.crawledProducts().get(1).category()).isEqualTo("구두");
+
+        verify(blogTemplateRepository).findByUserId(userId);
+        verify(ssadaguCrawler).searchFirstProduct("패딩");
+        verify(ssadaguCrawler).searchFirstProduct("구두");
+    }
+
+    @Test
+    @DisplayName("템플릿을 찾을 수 없으면 예외 발생")
+    void generateBlogContentRequest_TemplateNotFound() {
+        // given
+        Long userId = 999L;
+        given(blogTemplateRepository.findByUserId(userId))
+                .willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> fashionCrawlerService.generateBlogContentRequest(userId))
+                .isInstanceOf(BlogTemplateException.class)
+                .hasMessageContaining("블로그 템플릿을 찾을 수 없습니다");
+
+        verify(blogTemplateRepository).findByUserId(userId);
+    }
+
+    @Test
+    @DisplayName("템플릿에 카테고리가 없어도 빈 상품 리스트로 요청 데이터 생성")
+    void generateBlogContentRequest_NoCategories() {
+        // given
+        Long userId = 1L;
+        BlogTemplate template = BlogTemplate.builder()
+                .userId(userId)
+                .title("패션 아이템 추천")
+                .charLimit(1000)
+                .includeImages(true)
+                .imageCount(3)
+                .platforms(List.of("티스토리"))
+                .categories(List.of())
+                .build();
+
+        given(blogTemplateRepository.findByUserId(userId))
+                .willReturn(Optional.of(template));
+
+        // when
+        BlogContentGenerationRequest result = fashionCrawlerService.generateBlogContentRequest(userId);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.crawledProducts()).isEmpty();
+        verify(blogTemplateRepository).findByUserId(userId);
     }
 
     private SsadaguProductDto createMockProduct(String category) {
