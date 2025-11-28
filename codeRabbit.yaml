@@ -1,0 +1,61 @@
+version: 2
+
+# =======================================
+# 📌 리뷰 기본 설정 (가장 중요)
+# =======================================
+reviews:
+  language: ko        # 리뷰 한국어로
+
+  auto_review:
+    enabled: true     # 자동 리뷰 켜기
+    drafts: true      # draft PR도 자동 리뷰
+
+  auto_incremental_review: true   # 변경된 부분만 리뷰 (효율적)
+  review_level: high              # 꼼꼼하게 리뷰
+  review_status: true             # 리뷰 상태 표시
+  commit_status: true
+
+# =======================================
+# 📌 Inline comments 규칙
+# =======================================
+comments:
+  enable_inline: true
+  max_comments: 200
+
+# =======================================
+# 📌 리뷰 대상 파일 (BE + Crawler)
+# =======================================
+path_includes:
+  - "src/**/*.java"
+  - "src/**/*.kt"
+
+# =======================================
+# 📌 리뷰 제외 경로(꼭 넣어야 함)
+# =======================================
+path_excludes:
+  - "node_modules/**"
+  - "frontend/node_modules/**"
+  - "backend/node_modules/**"
+  - "ai-service/__pycache__/**"
+  - "**/__pycache__/**"
+  - "**/dist/**"
+  - "**/build/**"
+  - "**/.next/**"
+  - "**/coverage/**"
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+  - "**/*.mock.ts"
+  - "tmp/**"
+  - "logs/**"
+  - "data/**"
+  - ".vscode/**"
+  - ".idea/**"
+
+# =======================================
+# 📌 언어별 추가 규칙 (고급)
+# =======================================
+language_rules:
+  java:
+    check_nullability_annotations: true
+    enforce_access_modifiers: true
+    check_stream_usage: true
