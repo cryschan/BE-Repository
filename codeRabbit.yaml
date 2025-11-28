@@ -4,47 +4,28 @@ version: 2
 # 📌 리뷰 기본 설정 (가장 중요)
 # =======================================
 reviews:
-  auto_review: true             # PR 생성 시 자동 리뷰
-  review_level: high            # 한 줄 한 줄 꼼꼼한 리뷰
-  review_status: true
-  run_on_push: true             # push할 때도 리뷰 (중요)
-  run_on_draft: true            # draft PR도 체크
-  run_on_fork: true
-  language: ko
+  language: ko        # 리뷰 한국어로
 
+  auto_review:
+    enabled: true     # 자동 리뷰 켜기
+    drafts: true      # draft PR도 자동 리뷰
 
-
-# =======================================
-# 📌 diff 기반 상세 리뷰
-# =======================================
-diff:
-  review_diff_only: true        # 변경된 코드 라인만 집중 리뷰
-  comment_on_every_diff: true   # diff 대부분 라인에 코멘트
-
-# =======================================
-# 📌 커밋 단위 리뷰
-# =======================================
-commits:
-  analyze_commits: true
-  comment_on_commits: true
+  auto_incremental_review: true   # 변경된 부분만 리뷰 (효율적)
+  review_level: high              # 꼼꼼하게 리뷰
+  review_status: true             # 리뷰 상태 표시
+  commit_status: true
 
 # =======================================
 # 📌 Inline comments 규칙
 # =======================================
 comments:
   enable_inline: true
-  require_changes: false         # 문제 있으면 반드시 수정 요청
   max_comments: 200
 
 # =======================================
-# 📌 리뷰 대상 파일 (FE + BE + Crawler + Scripts)
+# 📌 리뷰 대상 파일 (BE + Crawler)
 # =======================================
 path_includes:
-  - "src/**/*.ts"
-  - "src/**/*.tsx"
-  - "src/**/*.js"
-  - "src/**/*.jsx"
-  - "src/**/*.py"
   - "src/**/*.java"
   - "src/**/*.kt"
 
@@ -74,11 +55,6 @@ path_excludes:
 # 📌 언어별 추가 규칙 (고급)
 # =======================================
 language_rules:
-  typescript:
-    enforce_explicit_types: true     # 암시적 any 금지
-    check_unused_imports: true
-    check_null_safety: true
-    check_async_await: true          # await 누락 감지
   java:
     check_nullability_annotations: true
     enforce_access_modifiers: true
