@@ -37,7 +37,7 @@ public class BlogPageResponse {
         return BlogPageResponse.builder()
                 .blogs(page.getContent())
                 .currentPage(page.getNumber() + 1)  // 0-based → 1-based
-                .totalPages(page.getTotalPages())
+                .totalPages(Math.max(page.getTotalPages(), 1))  // 최소 1페이지
                 .totalElements(page.getTotalElements())
                 .size(page.getSize())
                 .isFirst(page.isFirst())
