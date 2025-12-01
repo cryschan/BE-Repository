@@ -24,9 +24,9 @@ public class BlogService {
     private static final int DEFAULT_PAGE_SIZE = 4;
 
     /**
-     * 특정 유저의 블로그 목록 조회 (페이지네이션)
+     * 특정 유저의 블로그 목록 조회 (페이지네이션 + 카테고리 필터링)
      */
-    public BlogPageResponse getMyBlogs(Long userId, int page) {
+    public BlogPageResponse getMyBlogs(Long userId, int page, String category) {
         log.debug("Fetching blogs for userId: {}, page: {}", userId, page);
 
         // 페이지 번호 검증
@@ -38,7 +38,14 @@ public class BlogService {
         int pageIndex = page - 1;
         Pageable pageable = PageRequest.of(pageIndex, DEFAULT_PAGE_SIZE);
 
-        Page<Blog> blogPage = blogRepository.findAllByUserIdOrderByCreatedAtDesc(userId, pageable);
+        Page<Blog> blogPage;
+
+        // 카테고리가 있으면 필터링, 없으면 전체 조회
+        if (category != null && !category.trim().isEmpty()) {
+            blogPage = blogRepository.findAllByUserIdAndCategoryOrderByCreatedAtDesc(userId, category, pageable);
+        } else {
+            blogPage = blogRepository.findAllByUserIdOrderByCreatedAtDesc(userId, pageable);
+        }
 
         // 존재하지 않는 페이지 요청 체크
         if (page > 1 && blogPage.isEmpty()) {

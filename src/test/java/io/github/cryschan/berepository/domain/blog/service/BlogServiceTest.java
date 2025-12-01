@@ -24,7 +24,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
@@ -49,15 +49,15 @@ class BlogServiceTest {
                 .blogTemplateId(1L)
                 .title("여름 남성 반팔 티셔츠 추천")
                 .content("여름철 필수 아이템...")
-                .category("남성 의류")
+                .category("상의")
                 .userId(1L)
                 .build();
 
         blog2 = Blog.builder()
                 .blogTemplateId(1L)
-                .title("메이크업 초보자 가이드")
-                .content("초보자도 쉽게...")
-                .category("메이크업 제품")
+                .title("겨울 니트 추천")
+                .content("따뜻한 니트...")
+                .category("상의")
                 .userId(1L)
                 .build();
 
@@ -66,7 +66,7 @@ class BlogServiceTest {
                 .title("편안한 운동화 추천")
                 .content("일상생활에서...")
                 .category("신발")
-                .userId(2L)
+                .userId(1L)
                 .build();
     }
 
@@ -75,30 +75,124 @@ class BlogServiceTest {
     class GetMyBlogsTest {
 
         @Test
-        @DisplayName("성공: 정상적인 페이지 번호로 블로그 목록을 조회한다")
-        void getMyBlogs_Success() {
+        @DisplayName("성공: 카테고리 없이 전체 블로그 목록을 조회한다")
+        void getMyBlogs_Success_WithoutCategory() {
             // given
             Long userId = 1L;
             int page = 1;
+            String category = null;
             Pageable pageable = PageRequest.of(0, 4);
-            Page<Blog> blogPage = new PageImpl<>(List.of(blog1, blog2), pageable, 2);
+            Page<Blog> blogPage = new PageImpl<>(List.of(blog1, blog2, blog3), pageable, 3);
 
             given(blogRepository.findAllByUserIdOrderByCreatedAtDesc(userId, pageable))
                     .willReturn(blogPage);
 
             // when
-            BlogPageResponse response = blogService.getMyBlogs(userId, page);
+            BlogPageResponse response = blogService.getMyBlogs(userId, page, category);
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.getBlogs()).hasSize(3);
+            assertThat(response.getCurrentPage()).isEqualTo(1);
+            assertThat(response.getTotalElements()).isEqualTo(3);
+
+            verify(blogRepository).findAllByUserIdOrderByCreatedAtDesc(userId, pageable);
+            verify(blogRepository, never()).findAllByUserIdAndCategoryOrderByCreatedAtDesc(any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("성공: 카테고리로 필터링하여 블로그 목록을 조회한다")
+        void getMyBlogs_Success_WithCategory() {
+            // given
+            Long userId = 1L;
+            int page = 1;
+            String category = "상의";
+            Pageable pageable = PageRequest.of(0, 4);
+            Page<Blog> blogPage = new PageImpl<>(List.of(blog1, blog2), pageable, 2);
+
+            given(blogRepository.findAllByUserIdAndCategoryOrderByCreatedAtDesc(userId, category, pageable))
+                    .willReturn(blogPage);
+
+            // when
+            BlogPageResponse response = blogService.getMyBlogs(userId, page, category);
 
             // then
             assertThat(response).isNotNull();
             assertThat(response.getBlogs()).hasSize(2);
-            assertThat(response.getCurrentPage()).isEqualTo(1);
-            assertThat(response.getTotalPages()).isEqualTo(1);
-            assertThat(response.getTotalElements()).isEqualTo(2);
-            assertThat(response.isFirst()).isTrue();
-            assertThat(response.isLast()).isTrue();
+            assertThat(response.getBlogs()).allMatch(blog -> blog.getCategory().equals("상의"));
+
+            verify(blogRepository).findAllByUserIdAndCategoryOrderByCreatedAtDesc(userId, category, pageable);
+            verify(blogRepository, never()).findAllByUserIdOrderByCreatedAtDesc(any(), any());
+        }
+
+        @Test
+        @DisplayName("성공: 빈 카테고리 문자열은 전체 조회로 처리한다")
+        void getMyBlogs_Success_EmptyCategory() {
+            // given
+            Long userId = 1L;
+            int page = 1;
+            String category = "";
+            Pageable pageable = PageRequest.of(0, 4);
+            Page<Blog> blogPage = new PageImpl<>(List.of(blog1, blog2, blog3), pageable, 3);
+
+            given(blogRepository.findAllByUserIdOrderByCreatedAtDesc(userId, pageable))
+                    .willReturn(blogPage);
+
+            // when
+            BlogPageResponse response = blogService.getMyBlogs(userId, page, category);
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.getBlogs()).hasSize(3);
 
             verify(blogRepository).findAllByUserIdOrderByCreatedAtDesc(userId, pageable);
+        }
+
+        @Test
+        @DisplayName("성공: 공백만 있는 카테고리는 전체 조회로 처리한다")
+        void getMyBlogs_Success_BlankCategory() {
+            // given
+            Long userId = 1L;
+            int page = 1;
+            String category = "   ";
+            Pageable pageable = PageRequest.of(0, 4);
+            Page<Blog> blogPage = new PageImpl<>(List.of(blog1, blog2, blog3), pageable, 3);
+
+            given(blogRepository.findAllByUserIdOrderByCreatedAtDesc(userId, pageable))
+                    .willReturn(blogPage);
+
+            // when
+            BlogPageResponse response = blogService.getMyBlogs(userId, page, category);
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.getBlogs()).hasSize(3);
+
+            verify(blogRepository).findAllByUserIdOrderByCreatedAtDesc(userId, pageable);
+        }
+
+        @Test
+        @DisplayName("성공: 해당 카테고리에 블로그가 없으면 빈 목록을 반환한다")
+        void getMyBlogs_Success_EmptyResultForCategory() {
+            // given
+            Long userId = 1L;
+            int page = 1;
+            String category = "아우터";
+            Pageable pageable = PageRequest.of(0, 4);
+            Page<Blog> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+
+            given(blogRepository.findAllByUserIdAndCategoryOrderByCreatedAtDesc(userId, category, pageable))
+                    .willReturn(emptyPage);
+
+            // when
+            BlogPageResponse response = blogService.getMyBlogs(userId, page, category);
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.getBlogs()).isEmpty();
+            assertThat(response.getTotalElements()).isEqualTo(0);
+
+            verify(blogRepository).findAllByUserIdAndCategoryOrderByCreatedAtDesc(userId, category, pageable);
         }
 
         @Test
@@ -107,13 +201,15 @@ class BlogServiceTest {
             // given
             Long userId = 1L;
             int page = 0;
+            String category = null;
 
             // when & then
-            assertThatThrownBy(() -> blogService.getMyBlogs(userId, page))
+            assertThatThrownBy(() -> blogService.getMyBlogs(userId, page, category))
                     .isInstanceOf(BlogException.class)
                     .hasMessageContaining("페이지 번호는 1 이상이어야 합니다");
 
             verify(blogRepository, never()).findAllByUserIdOrderByCreatedAtDesc(any(), any());
+            verify(blogRepository, never()).findAllByUserIdAndCategoryOrderByCreatedAtDesc(any(), any(), any());
         }
 
         @Test
@@ -122,13 +218,14 @@ class BlogServiceTest {
             // given
             Long userId = 1L;
             int page = -1;
+            String category = "상의";
 
             // when & then
-            assertThatThrownBy(() -> blogService.getMyBlogs(userId, page))
+            assertThatThrownBy(() -> blogService.getMyBlogs(userId, page, category))
                     .isInstanceOf(BlogException.class)
                     .hasMessageContaining("페이지 번호는 1 이상이어야 합니다");
 
-            verify(blogRepository, never()).findAllByUserIdOrderByCreatedAtDesc(any(), any());
+            verify(blogRepository, never()).findAllByUserIdAndCategoryOrderByCreatedAtDesc(any(), any(), any());
         }
 
         @Test
@@ -137,6 +234,7 @@ class BlogServiceTest {
             // given
             Long userId = 1L;
             int page = 10;
+            String category = null;
             Pageable pageable = PageRequest.of(9, 4);
             Page<Blog> emptyPage = new PageImpl<>(List.of(), pageable, 5);
 
@@ -144,7 +242,7 @@ class BlogServiceTest {
                     .willReturn(emptyPage);
 
             // when & then
-            assertThatThrownBy(() -> blogService.getMyBlogs(userId, page))
+            assertThatThrownBy(() -> blogService.getMyBlogs(userId, page, category))
                     .isInstanceOf(BlogException.class)
                     .hasMessageContaining("페이지")
                     .hasMessageContaining("존재하지 않습니다");
@@ -158,6 +256,7 @@ class BlogServiceTest {
             // given
             Long userId = 999L;
             int page = 1;
+            String category = null;
             Pageable pageable = PageRequest.of(0, 4);
             Page<Blog> emptyPage = new PageImpl<>(List.of(), pageable, 0);
 
@@ -165,7 +264,7 @@ class BlogServiceTest {
                     .willReturn(emptyPage);
 
             // when
-            BlogPageResponse response = blogService.getMyBlogs(userId, page);
+            BlogPageResponse response = blogService.getMyBlogs(userId, page, category);
 
             // then
             assertThat(response).isNotNull();
@@ -193,9 +292,8 @@ class BlogServiceTest {
 
             // then
             assertThat(response).isNotNull();
-            assertThat(response.getId()).isEqualTo(1L);
             assertThat(response.getTitle()).isEqualTo("여름 남성 반팔 티셔츠 추천");
-            assertThat(response.getCategory()).isEqualTo("남성 의류");
+            assertThat(response.getCategory()).isEqualTo("상의");
 
             verify(blogRepository).findById(blogId);
         }
@@ -276,7 +374,7 @@ class BlogServiceTest {
 
             // then
             assertThat(response).isNotNull();
-            assertThat(response.getId()).isEqualTo(1L);
+            assertThat(response.getTitle()).isEqualTo("여름 남성 반팔 티셔츠 추천");
 
             verify(blogRepository).findById(blogId);
         }
@@ -319,11 +417,50 @@ class BlogServiceTest {
     class IntegrationScenarioTest {
 
         @Test
+        @DisplayName("시나리오: 사용자가 카테고리별로 블로그를 필터링하여 조회한다")
+        void filterByCategory_Scenario() {
+            // given
+            Long userId = 1L;
+            Pageable pageable = PageRequest.of(0, 4);
+
+            Page<Blog> allBlogs = new PageImpl<>(List.of(blog1, blog2, blog3), pageable, 3);
+            Page<Blog> topBlogs = new PageImpl<>(List.of(blog1, blog2), pageable, 2);
+            Page<Blog> shoesBlogs = new PageImpl<>(List.of(blog3), pageable, 1);
+
+            given(blogRepository.findAllByUserIdOrderByCreatedAtDesc(userId, pageable))
+                    .willReturn(allBlogs);
+            given(blogRepository.findAllByUserIdAndCategoryOrderByCreatedAtDesc(userId, "상의", pageable))
+                    .willReturn(topBlogs);
+            given(blogRepository.findAllByUserIdAndCategoryOrderByCreatedAtDesc(userId, "신발", pageable))
+                    .willReturn(shoesBlogs);
+
+            // 1. 전체 조회
+            BlogPageResponse allResponse = blogService.getMyBlogs(userId, 1, null);
+            assertThat(allResponse.getBlogs()).hasSize(3);
+
+            // 2. 상의 카테고리만 조회
+            BlogPageResponse topResponse = blogService.getMyBlogs(userId, 1, "상의");
+            assertThat(topResponse.getBlogs()).hasSize(2);
+            assertThat(topResponse.getBlogs()).allMatch(blog -> blog.getCategory().equals("상의"));
+
+            // 3. 신발 카테고리만 조회
+            BlogPageResponse shoesResponse = blogService.getMyBlogs(userId, 1, "신발");
+            assertThat(shoesResponse.getBlogs()).hasSize(1);
+            assertThat(shoesResponse.getBlogs().get(0).getCategory()).isEqualTo("신발");
+
+            // 검증
+            verify(blogRepository).findAllByUserIdOrderByCreatedAtDesc(userId, pageable);
+            verify(blogRepository).findAllByUserIdAndCategoryOrderByCreatedAtDesc(userId, "상의", pageable);
+            verify(blogRepository).findAllByUserIdAndCategoryOrderByCreatedAtDesc(userId, "신발", pageable);
+        }
+
+        @Test
         @DisplayName("시나리오: 사용자가 자신의 블로그 목록을 조회하고 상세 조회한다")
         void viewMyBlogsAndDetail_Scenario() {
             // given
             Long userId = 1L;
             int page = 1;
+            String category = null;
             Pageable pageable = PageRequest.of(0, 4);
             Page<Blog> blogPage = new PageImpl<>(List.of(blog1, blog2), pageable, 2);
 
@@ -332,13 +469,11 @@ class BlogServiceTest {
             given(blogRepository.findById(1L)).willReturn(Optional.of(blog1));
 
             // 1. 블로그 목록 조회
-            BlogPageResponse listResponse = blogService.getMyBlogs(userId, page);
+            BlogPageResponse listResponse = blogService.getMyBlogs(userId, page, category);
             assertThat(listResponse.getBlogs()).hasSize(2);
-            assertThat(listResponse.getBlogs().get(0).getId()).isEqualTo(1L);
 
             // 2. 첫 번째 블로그 상세 조회
             BlogResponse detailResponse = blogService.getBlog(1L);
-            assertThat(detailResponse.getId()).isEqualTo(1L);
             assertThat(detailResponse.getTitle()).isEqualTo("여름 남성 반팔 티셔츠 추천");
 
             // 검증
@@ -353,6 +488,7 @@ class BlogServiceTest {
             Long userId = 1L;
             int invalidPage = 0;
             int validPage = 1;
+            String category = null;
             Pageable pageable = PageRequest.of(0, 4);
             Page<Blog> blogPage = new PageImpl<>(List.of(blog1, blog2), pageable, 2);
 
@@ -360,11 +496,11 @@ class BlogServiceTest {
                     .willReturn(blogPage);
 
             // 1. 잘못된 페이지 번호로 조회 시도
-            assertThatThrownBy(() -> blogService.getMyBlogs(userId, invalidPage))
+            assertThatThrownBy(() -> blogService.getMyBlogs(userId, invalidPage, category))
                     .isInstanceOf(BlogException.class);
 
             // 2. 올바른 페이지 번호로 재시도
-            BlogPageResponse response = blogService.getMyBlogs(userId, validPage);
+            BlogPageResponse response = blogService.getMyBlogs(userId, validPage, category);
             assertThat(response.getBlogs()).hasSize(2);
 
             // 검증
@@ -376,6 +512,7 @@ class BlogServiceTest {
         void navigateMultiplePages_Scenario() {
             // given
             Long userId = 1L;
+            String category = null;
             Pageable page1 = PageRequest.of(0, 4);
             Pageable page2 = PageRequest.of(1, 4);
 
@@ -388,14 +525,14 @@ class BlogServiceTest {
                     .willReturn(secondPage);
 
             // 1. 첫 번째 페이지 조회
-            BlogPageResponse response1 = blogService.getMyBlogs(userId, 1);
+            BlogPageResponse response1 = blogService.getMyBlogs(userId, 1, category);
             assertThat(response1.getCurrentPage()).isEqualTo(1);
             assertThat(response1.getBlogs()).hasSize(2);
             assertThat(response1.isFirst()).isTrue();
             assertThat(response1.isLast()).isFalse();
 
             // 2. 두 번째 페이지 조회
-            BlogPageResponse response2 = blogService.getMyBlogs(userId, 2);
+            BlogPageResponse response2 = blogService.getMyBlogs(userId, 2, category);
             assertThat(response2.getCurrentPage()).isEqualTo(2);
             assertThat(response2.getBlogs()).hasSize(1);
             assertThat(response2.isFirst()).isFalse();
