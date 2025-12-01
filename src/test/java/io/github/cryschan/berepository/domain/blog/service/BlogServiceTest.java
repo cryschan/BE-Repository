@@ -1,10 +1,13 @@
 package io.github.cryschan.berepository.domain.blog.service;
 
+import io.github.cryschan.berepository.domain.ai.dto.response.SsadaguSummaryResponse;
 import io.github.cryschan.berepository.domain.blog.dto.response.BlogPageResponse;
 import io.github.cryschan.berepository.domain.blog.dto.response.BlogResponse;
+import io.github.cryschan.berepository.domain.blog.dto.response.BlogSaveResult;
 import io.github.cryschan.berepository.domain.blog.entity.Blog;
 import io.github.cryschan.berepository.domain.blog.exception.BlogException;
 import io.github.cryschan.berepository.domain.blog.repository.BlogRepository;
+import io.github.cryschan.berepository.domain.fashion.dto.response.SsadaguProductDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -17,8 +20,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,6 +58,7 @@ class BlogServiceTest {
                 .category("남성 의류")
                 .userId(1L)
                 .build();
+        ReflectionTestUtils.setField(blog1, "id", 1L);
 
         blog2 = Blog.builder()
                 .blogTemplateId(1L)
@@ -60,6 +67,7 @@ class BlogServiceTest {
                 .category("메이크업 제품")
                 .userId(1L)
                 .build();
+        ReflectionTestUtils.setField(blog2, "id", 2L);
 
         blog3 = Blog.builder()
                 .blogTemplateId(2L)
@@ -68,6 +76,7 @@ class BlogServiceTest {
                 .category("신발")
                 .userId(2L)
                 .build();
+        ReflectionTestUtils.setField(blog3, "id", 3L);
     }
 
     @Nested
@@ -403,6 +412,212 @@ class BlogServiceTest {
             // 검증
             verify(blogRepository).findAllByUserIdOrderByCreatedAtDesc(userId, page1);
             verify(blogRepository).findAllByUserIdOrderByCreatedAtDesc(userId, page2);
+        }
+    }
+
+    @Nested
+    @DisplayName("블로그 일괄 생성 테스트")
+    class CreateBlogsFromSummariesTest {
+
+        @Test
+        @DisplayName("성공: 모든 요약이 정상적으로 블로그로 저장된다")
+        void createBlogsFromSummaries_Success() {
+            // given
+            Long templateId = 1L;
+            String templateTitle = "패션 추천";
+            Long userId = 10L;
+
+            SsadaguSummaryResponse response1 = createMockSummaryResponse("패딩");
+            SsadaguSummaryResponse response2 = createMockSummaryResponse("운동화");
+            List<SsadaguSummaryResponse> summaries = List.of(response1, response2);
+
+            given(blogRepository.save(any(Blog.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+            // when
+            BlogSaveResult result = blogService.createBlogsFromSummaries(templateId, templateTitle, userId, summaries);
+
+            // then
+            assertThat(result.successCount()).isEqualTo(2);
+            assertThat(result.failCount()).isEqualTo(0);
+            assertThat(result.isAllSuccess()).isTrue();
+
+            verify(blogRepository, times(2)).save(any(Blog.class));
+        }
+
+        @Test
+        @DisplayName("부분 성공: null summary는 건너뛰고 나머지는 저장된다")
+        void createBlogsFromSummaries_SkipNullSummary() {
+            // given
+            Long templateId = 1L;
+            String templateTitle = "패션 추천";
+            Long userId = 10L;
+
+            SsadaguSummaryResponse validResponse = createMockSummaryResponse("패딩");
+            List<SsadaguSummaryResponse> summaries = new ArrayList<>();
+            summaries.add(null);
+            summaries.add(validResponse);
+
+            given(blogRepository.save(any(Blog.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+            // when
+            BlogSaveResult result = blogService.createBlogsFromSummaries(templateId, templateTitle, userId, summaries);
+
+            // then
+            assertThat(result.successCount()).isEqualTo(1);
+            assertThat(result.failCount()).isEqualTo(1);
+            assertThat(result.isAllSuccess()).isFalse();
+
+            verify(blogRepository, times(1)).save(any(Blog.class));
+        }
+
+        @Test
+        @DisplayName("부분 성공: null product는 건너뛰고 나머지는 저장된다")
+        void createBlogsFromSummaries_SkipNullProduct() {
+            // given
+            Long templateId = 1L;
+            String templateTitle = "패션 추천";
+            Long userId = 10L;
+
+            SsadaguSummaryResponse nullProductResponse = SsadaguSummaryResponse.from(null, "요약 내용");
+            SsadaguSummaryResponse validResponse = createMockSummaryResponse("패딩");
+            List<SsadaguSummaryResponse> summaries = List.of(nullProductResponse, validResponse);
+
+            given(blogRepository.save(any(Blog.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+            // when
+            BlogSaveResult result = blogService.createBlogsFromSummaries(templateId, templateTitle, userId, summaries);
+
+            // then
+            assertThat(result.successCount()).isEqualTo(1);
+            assertThat(result.failCount()).isEqualTo(1);
+
+            verify(blogRepository, times(1)).save(any(Blog.class));
+        }
+
+        @Test
+        @DisplayName("부분 성공: null category는 건너뛰고 나머지는 저장된다")
+        void createBlogsFromSummaries_SkipNullCategory() {
+            // given
+            Long templateId = 1L;
+            String templateTitle = "패션 추천";
+            Long userId = 10L;
+
+            SsadaguProductDto nullCategoryProduct = SsadaguProductDto.builder()
+                    .productName("테스트 상품")
+                    .productUrl("https://test.com")
+                    .price(10000)
+                    .category(null)  // null category
+                    .build();
+            SsadaguSummaryResponse nullCategoryResponse = SsadaguSummaryResponse.from(nullCategoryProduct, "요약");
+            SsadaguSummaryResponse validResponse = createMockSummaryResponse("패딩");
+            List<SsadaguSummaryResponse> summaries = List.of(nullCategoryResponse, validResponse);
+
+            given(blogRepository.save(any(Blog.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+            // when
+            BlogSaveResult result = blogService.createBlogsFromSummaries(templateId, templateTitle, userId, summaries);
+
+            // then
+            assertThat(result.successCount()).isEqualTo(1);
+            assertThat(result.failCount()).isEqualTo(1);
+
+            verify(blogRepository, times(1)).save(any(Blog.class));
+        }
+
+        @Test
+        @DisplayName("부분 성공: 저장 중 예외 발생 시 다른 항목은 계속 저장된다")
+        void createBlogsFromSummaries_ContinueOnException() {
+            // given
+            Long templateId = 1L;
+            String templateTitle = "패션 추천";
+            Long userId = 10L;
+
+            SsadaguSummaryResponse response1 = createMockSummaryResponse("패딩");
+            SsadaguSummaryResponse response2 = createMockSummaryResponse("운동화");
+            List<SsadaguSummaryResponse> summaries = List.of(response1, response2);
+
+            // 첫 번째 저장은 실패, 두 번째는 성공
+            given(blogRepository.save(any(Blog.class)))
+                    .willThrow(new RuntimeException("DB 오류"))
+                    .willAnswer(invocation -> invocation.getArgument(0));
+
+            // when
+            BlogSaveResult result = blogService.createBlogsFromSummaries(templateId, templateTitle, userId, summaries);
+
+            // then
+            assertThat(result.successCount()).isEqualTo(1);
+            assertThat(result.failCount()).isEqualTo(1);
+
+            verify(blogRepository, times(2)).save(any(Blog.class));
+        }
+
+        @Test
+        @DisplayName("성공: 빈 목록이 전달되면 아무것도 저장하지 않는다")
+        void createBlogsFromSummaries_EmptyList() {
+            // given
+            Long templateId = 1L;
+            String templateTitle = "패션 추천";
+            Long userId = 10L;
+            List<SsadaguSummaryResponse> summaries = List.of();
+
+            // when
+            BlogSaveResult result = blogService.createBlogsFromSummaries(templateId, templateTitle, userId, summaries);
+
+            // then
+            assertThat(result.successCount()).isEqualTo(0);
+            assertThat(result.failCount()).isEqualTo(0);
+            assertThat(result.totalCount()).isEqualTo(0);
+
+            verify(blogRepository, never()).save(any(Blog.class));
+        }
+
+        @Test
+        @DisplayName("성공: 긴 상품명은 50자로 잘린다")
+        void createBlogsFromSummaries_TruncateLongProductName() {
+            // given
+            Long templateId = 1L;
+            String templateTitle = "패션 추천";
+            Long userId = 10L;
+
+            String longProductName = "A".repeat(100);  // 100자 상품명
+            SsadaguProductDto product = SsadaguProductDto.builder()
+                    .productName(longProductName)
+                    .productUrl("https://test.com")
+                    .price(10000)
+                    .category("패딩")
+                    .build();
+            SsadaguSummaryResponse response = SsadaguSummaryResponse.from(product, "요약");
+            List<SsadaguSummaryResponse> summaries = List.of(response);
+
+            given(blogRepository.save(any(Blog.class))).willAnswer(invocation -> {
+                Blog savedBlog = invocation.getArgument(0);
+                // 제목에 잘린 상품명이 포함되어 있는지 확인
+                assertThat(savedBlog.getTitle()).contains("...");
+                assertThat(savedBlog.getTitle().length()).isLessThan(200);
+                return savedBlog;
+            });
+
+            // when
+            BlogSaveResult result = blogService.createBlogsFromSummaries(templateId, templateTitle, userId, summaries);
+
+            // then
+            assertThat(result.successCount()).isEqualTo(1);
+            verify(blogRepository).save(any(Blog.class));
+        }
+
+        private SsadaguSummaryResponse createMockSummaryResponse(String category) {
+            SsadaguProductDto product = SsadaguProductDto.builder()
+                    .productName("테스트 " + category + " 상품")
+                    .productUrl("https://ssadagu.kr/test")
+                    .price(29900)
+                    .rating(4.5)
+                    .reviewCount(100)
+                    .imageUrl("https://example.com/image.jpg")
+                    .category(category)
+                    .productAttributes(Map.of("소재", "폴리에스터"))
+                    .build();
+
+            return SsadaguSummaryResponse.from(product, "이것은 테스트 AI 요약입니다. " + category + " 상품 추천!");
         }
     }
 }
