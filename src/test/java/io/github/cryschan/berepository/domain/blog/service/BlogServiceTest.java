@@ -478,7 +478,7 @@ class BlogServiceTest {
             String templateTitle = "패션 추천";
             Long userId = 10L;
 
-            SsadaguSummaryResponse nullProductResponse = SsadaguSummaryResponse.from(null, "요약 내용");
+            SsadaguSummaryResponse nullProductResponse = SsadaguSummaryResponse.from(null, "테스트 제목", "요약 내용");
             SsadaguSummaryResponse validResponse = createMockSummaryResponse("패딩");
             List<SsadaguSummaryResponse> summaries = List.of(nullProductResponse, validResponse);
 
@@ -508,7 +508,7 @@ class BlogServiceTest {
                     .price(10000)
                     .category(null)  // null category
                     .build();
-            SsadaguSummaryResponse nullCategoryResponse = SsadaguSummaryResponse.from(nullCategoryProduct, "요약");
+            SsadaguSummaryResponse nullCategoryResponse = SsadaguSummaryResponse.from(nullCategoryProduct, "테스트 제목", "요약");
             SsadaguSummaryResponse validResponse = createMockSummaryResponse("패딩");
             List<SsadaguSummaryResponse> summaries = List.of(nullCategoryResponse, validResponse);
 
@@ -586,7 +586,7 @@ class BlogServiceTest {
                     .price(10000)
                     .category("패딩")
                     .build();
-            SsadaguSummaryResponse response = SsadaguSummaryResponse.from(product, "요약");
+            SsadaguSummaryResponse response = SsadaguSummaryResponse.from(product, "긴 제목 테스트", "요약");
             List<SsadaguSummaryResponse> summaries = List.of(response);
 
             given(blogRepository.save(any(Blog.class))).willAnswer(invocation -> {
@@ -617,7 +617,7 @@ class BlogServiceTest {
                     .productAttributes(Map.of("소재", "폴리에스터"))
                     .build();
 
-            return SsadaguSummaryResponse.from(product, "이것은 테스트 AI 요약입니다. " + category + " 상품 추천!");
+            return SsadaguSummaryResponse.from(product, category + " 추천 상품", "이것은 테스트 AI 요약입니다. " + category + " 상품 추천!");
         }
     }
 }

@@ -50,8 +50,9 @@ public class BlogTemplateScheduler {
 
     /**
      * 템플릿 기반으로 크롤링 + AI 요약 처리
+     * 스케줄러 및 수동 트리거에서 호출 가능
      */
-    private void processTemplate(BlogTemplate template) {
+    public void processTemplate(BlogTemplate template) {
         log.info("사용자 {} 템플릿 처리 시작 (제목: {})", template.getUserId(), template.getTitle());
 
         List<String> categories = template.getCategories();

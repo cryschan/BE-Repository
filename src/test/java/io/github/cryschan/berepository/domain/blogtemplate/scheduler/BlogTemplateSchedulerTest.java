@@ -232,6 +232,6 @@ class BlogTemplateSchedulerTest {
                 .productAttributes(Map.of("소재", "폴리에스터"))
                 .build();
 
-        return SsadaguSummaryResponse.from(product, "이것은 테스트 AI 요약입니다. " + category + " 상품 추천!");
+        return SsadaguSummaryResponse.from(product, category + " 추천 상품", "이것은 테스트 AI 요약입니다. " + category + " 상품 추천!");
     }
 }

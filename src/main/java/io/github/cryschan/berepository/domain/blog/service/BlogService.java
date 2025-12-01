@@ -140,7 +140,8 @@ public class BlogService {
                     continue;
                 }
 
-                Blog blog = Blog.create(templateId, title, summary.summary(), category, userId);
+                String content = generateBlogContent(summary);
+                Blog blog = Blog.create(templateId, title, content, category, userId);
                 Blog saved = blogRepository.save(blog);
 
                 successCount++;
@@ -159,17 +160,49 @@ public class BlogService {
 
     /**
      * 블로그 제목 생성
-     * 형식: [템플릿제목] 상품명 - 날짜
+     * AI가 생성한 제목만 사용
      */
     private String generateBlogTitle(String templateTitle, SsadaguSummaryResponse summary) {
-        String date = LocalDate.now().format(DateConstants.BLOG_DATE_FORMATTER);
-        String productName = summary.product().productName();
+        String title = summary.title();
 
-        if (productName != null && productName.length() > 50) {
-            productName = productName.substring(0, 47) + "...";
+        // AI 제목이 없으면 카테고리 기반 기본 제목 사용
+        if (title == null || title.isBlank()) {
+            String category = summary.product().category();
+            title = (category != null ? category : "추천") + " 상품 소개";
         }
 
-        return String.format("[%s] %s - %s", templateTitle, productName, date);
+        if (title.length() > 50) {
+            title = title.substring(0, 47) + "...";
+        }
+
+        return title;
+    }
+
+    /**
+     * 블로그 본문 생성
+     * AI 요약 + 상품 이미지 + 상품 링크 포함
+     */
+    private String generateBlogContent(SsadaguSummaryResponse summary) {
+        StringBuilder content = new StringBuilder();
+
+        // 상품 이미지 추가 (크기 고정, 중앙 정렬)
+        String imageUrl = summary.product().imageUrl();
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            content.append("<div style=\"text-align: center;\">\n");
+            content.append("  <img src=\"").append(imageUrl).append("\" alt=\"상품 이미지\" style=\"max-width: 300px; height: auto;\">\n");
+            content.append("</div>\n\n");
+        }
+
+        // AI 생성 본문
+        content.append(summary.summary());
+
+        // 상품 링크 추가
+        String productUrl = summary.product().productUrl();
+        if (productUrl != null && !productUrl.isBlank()) {
+            content.append("\n\n[상품 보러가기](").append(productUrl).append(")");
+        }
+
+        return content.toString();
     }
 
     @Transactional

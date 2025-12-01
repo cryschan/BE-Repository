@@ -3,6 +3,10 @@ package io.github.cryschan.berepository.domain.blogtemplate.controller;
 import io.github.cryschan.berepository.domain.blogtemplate.dto.request.BlogTemplateCreateRequest;
 import io.github.cryschan.berepository.domain.blogtemplate.dto.request.BlogTemplateUpdateRequest;
 import io.github.cryschan.berepository.domain.blogtemplate.dto.response.BlogTemplateResponse;
+import io.github.cryschan.berepository.domain.blogtemplate.entity.BlogTemplate;
+import io.github.cryschan.berepository.domain.blogtemplate.exception.BlogTemplateException;
+import io.github.cryschan.berepository.domain.blogtemplate.repository.BlogTemplateRepository;
+import io.github.cryschan.berepository.domain.blogtemplate.scheduler.BlogTemplateScheduler;
 import io.github.cryschan.berepository.domain.blogtemplate.service.BlogTemplateService;
 import io.github.cryschan.berepository.domain.user.exception.UserException;
 import io.github.cryschan.berepository.domain.user.repository.UserRepository;
@@ -40,6 +44,8 @@ public class BlogTemplateController {
 
     private final BlogTemplateService blogTemplateService;
     private final UserRepository userRepository;
+    private final BlogTemplateRepository blogTemplateRepository;
+    private final BlogTemplateScheduler blogTemplateScheduler;
 
     @Operation(summary = "블로그 템플릿 생성", description = "새로운 블로그 템플릿을 생성합니다. 한 사용자당 하나의 템플릿만 생성 가능합니다.")
     @ApiResponses({
@@ -520,6 +526,54 @@ public class BlogTemplateController {
     @GetMapping("/schedule")
     public List<BlogTemplateResponse> getTemplatesForTime(@RequestParam("time") LocalTime postTime) {
         return blogTemplateService.getTemplateResponsesForTime(postTime);
+    }
+
+    @Operation(summary = "블로그 글 즉시 생성", description = "현재 사용자의 블로그 템플릿을 기반으로 즉시 블로그 글을 생성합니다. 크롤링 + AI 요약 + 블로그 저장이 수행됩니다.")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "블로그 글 생성 시작",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                                "message": "블로그 글 생성이 완료되었습니다.",
+                                                "templateTitle": "패션 아이템 추천"
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "템플릿을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                                "message": "블로그 템플릿을 찾을 수 없습니다. User ID: 1",
+                                                "status": 404,
+                                                "code": "BT001"
+                                            }
+                                            """
+                            )
+                    )
+            )
+    })
+    @PostMapping("/generate-now")
+    public ResponseEntity<java.util.Map<String, String>> generateNow(Principal principal) {
+        Long userId = extractUserId(principal);
+        BlogTemplate template = blogTemplateRepository.findByUserId(userId)
+                .orElseThrow(() -> BlogTemplateException.notFoundByUserId(userId));
+
+        blogTemplateScheduler.processTemplate(template);
+
+        return ResponseEntity.ok(java.util.Map.of(
+                "message", "블로그 글 생성이 완료되었습니다.",
+                "templateTitle", template.getTitle()
+        ));
     }
 
     private Long extractUserId(Principal principal) {
