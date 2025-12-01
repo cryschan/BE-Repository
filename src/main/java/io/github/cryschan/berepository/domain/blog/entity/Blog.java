@@ -25,7 +25,7 @@ public class Blog {
     @Column(name = "blog_template_id", nullable = false)
     private Long blogTemplateId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 200)
     private String title;
 
     @Column(nullable = false, columnDefinition = "TEXT")
@@ -46,13 +46,27 @@ public class Blog {
     private Long userId;
 
     @Builder
-    public Blog(Long blogTemplateId, String title,
-                String content, String category, Long userId) {
+        private Blog(Long blogTemplateId, String title,
+                 String content, String category, Long userId) {
         this.blogTemplateId = blogTemplateId;
         this.title = title;
         this.content = content;
         this.category = category;
         this.userId = userId;
+    }
+
+    /**
+     * 스케줄러에서 블로그 생성 시 사용하는 정적 팩토리 메서드
+     */
+    public static Blog create(Long blogTemplateId, String title,
+                              String content, String category, Long userId) {
+        return Blog.builder()
+                .blogTemplateId(blogTemplateId)
+                .title(title)
+                .content(content)
+                .category(category)
+                .userId(userId)
+                .build();
     }
 
     public void updateTitle(String title) {

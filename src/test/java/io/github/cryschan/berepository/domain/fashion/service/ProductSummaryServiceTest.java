@@ -33,12 +33,12 @@ class ProductSummaryServiceTest {
     }
 
     @Nested
-    @DisplayName("summary 메서드")
-    class Summary {
+    @DisplayName("summaryWithTitle 메서드")
+    class SummaryWithTitle {
 
         @Test
-        @DisplayName("정상적인 상품 정보 입력 시 AI 요약 문자열을 반환한다")
-        void testSummary_정상_케이스() {
+        @DisplayName("정상적인 상품 정보 입력 시 AI 제목과 요약을 반환한다")
+        void testSummaryWithTitle_정상_케이스() {
             // Given
             SsadaguProductDto product = SsadaguProductDto.builder()
                     .productName("나이키 에어맥스 운동화")
@@ -55,35 +55,39 @@ class ProductSummaryServiceTest {
                     ))
                     .build();
 
-            String expectedSummary = "나이키 에어맥스 운동화는 129,000원에 판매되는 인기 상품입니다. " +
-                    "평점 4.5점, 리뷰 1,234개로 고객 만족도가 높습니다.";
+            String aiResponse = """
+                    [제목]
+                    발걸음이 가벼워지는 에어맥스
+                    [본문]
+                    나이키 에어맥스 운동화는 129,000원에 판매되는 인기 상품입니다. 평점 4.5점, 리뷰 1,234개로 고객 만족도가 높습니다.
+                    """;
 
-            when(chatClient.prompt().user(anyString()).call().content()).thenReturn(expectedSummary);
+            when(chatClient.prompt().system(anyString()).user(anyString()).call().content()).thenReturn(aiResponse);
 
             // When
-            String result = productSummaryService.summary(product, 200);
+            SsadaguSummaryService.TitleAndSummary result = productSummaryService.summaryWithTitle(product, 200);
 
             // Then
             assertThat(result).isNotNull();
-            assertThat(result).isNotBlank();
-            assertThat(result).isEqualTo(expectedSummary);
+            assertThat(result.title()).isEqualTo("발걸음이 가벼워지는 에어맥스");
+            assertThat(result.summary()).contains("나이키 에어맥스 운동화");
         }
 
         @Test
         @DisplayName("null 상품 입력 시 AiException을 던진다")
-        void testSummary_Null_입력() {
+        void testSummaryWithTitle_Null_입력() {
             // Given
             SsadaguProductDto nullProduct = null;
 
             // When & Then
-            assertThatThrownBy(() -> productSummaryService.summary(nullProduct, 200))
+            assertThatThrownBy(() -> productSummaryService.summaryWithTitle(nullProduct, 200))
                     .isInstanceOf(AiException.class)
                     .hasMessageContaining("상품 정보");
         }
 
         @Test
         @DisplayName("필수 필드가 비어있는 상품 입력 시 적절한 기본 메시지를 반환한다")
-        void testSummary_빈_데이터() {
+        void testSummaryWithTitle_빈_데이터() {
             // Given
             SsadaguProductDto emptyProduct = SsadaguProductDto.builder()
                     .productName("")
@@ -97,18 +101,19 @@ class ProductSummaryServiceTest {
                     .build();
 
             String fallbackMessage = "상품 정보가 충분하지 않아 요약을 생성할 수 없습니다.";
-            when(chatClient.prompt().user(anyString()).call().content()).thenReturn(fallbackMessage);
+            when(chatClient.prompt().system(anyString()).user(anyString()).call().content()).thenReturn(fallbackMessage);
 
             // When
-            String result = productSummaryService.summary(emptyProduct, 200);
+            SsadaguSummaryService.TitleAndSummary result = productSummaryService.summaryWithTitle(emptyProduct, 200);
 
             // Then
             assertThat(result).isNotNull();
+            assertThat(result.title()).isEqualTo("추천 상품"); // 카테고리 null이므로 기본값
         }
 
         @Test
         @DisplayName("productAttributes가 null인 경우에도 정상적으로 요약을 생성한다")
-        void testSummary_Null_Attributes() {
+        void testSummaryWithTitle_Null_Attributes() {
             // Given
             SsadaguProductDto productWithNullAttributes = SsadaguProductDto.builder()
                     .productName("테스트 상품")
@@ -121,15 +126,21 @@ class ProductSummaryServiceTest {
                     .productAttributes(null)
                     .build();
 
-            String expectedSummary = "테스트 상품은 50,000원에 판매되며, 평점 4.0점입니다.";
-            when(chatClient.prompt().user(anyString()).call().content()).thenReturn(expectedSummary);
+            String aiResponse = """
+                    [제목]
+                    스타일리시한 의류 추천
+                    [본문]
+                    테스트 상품은 50,000원에 판매되며, 평점 4.0점입니다.
+                    """;
+            when(chatClient.prompt().system(anyString()).user(anyString()).call().content()).thenReturn(aiResponse);
 
             // When
-            String result = productSummaryService.summary(productWithNullAttributes, 200);
+            SsadaguSummaryService.TitleAndSummary result = productSummaryService.summaryWithTitle(productWithNullAttributes, 200);
 
             // Then
             assertThat(result).isNotNull();
-            assertThat(result).isNotBlank();
+            assertThat(result.title()).isNotBlank();
+            assertThat(result.summary()).isNotBlank();
         }
     }
 }

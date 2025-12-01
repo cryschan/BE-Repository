@@ -1,9 +1,12 @@
 package io.github.cryschan.berepository.domain.blogtemplate.scheduler;
 
+import io.github.cryschan.berepository.domain.ai.dto.response.SsadaguSummaryResponse;
+import io.github.cryschan.berepository.domain.ai.service.SsadaguIntegrationService;
+import io.github.cryschan.berepository.domain.blog.dto.response.BlogSaveResult;
+import io.github.cryschan.berepository.domain.blog.service.BlogService;
 import io.github.cryschan.berepository.domain.blogtemplate.entity.BlogTemplate;
 import io.github.cryschan.berepository.domain.blogtemplate.service.BlogTemplateService;
 import io.github.cryschan.berepository.domain.fashion.dto.response.SsadaguProductDto;
-import io.github.cryschan.berepository.domain.fashion.service.FashionCrawlerService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +20,11 @@ import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -28,7 +36,10 @@ class BlogTemplateSchedulerTest {
     private BlogTemplateService blogTemplateService;
 
     @Mock
-    private FashionCrawlerService fashionCrawlerService;
+    private SsadaguIntegrationService ssadaguIntegrationService;
+
+    @Mock
+    private BlogService blogService;
 
     @InjectMocks
     private BlogTemplateScheduler blogTemplateScheduler;
@@ -45,38 +56,35 @@ class BlogTemplateSchedulerTest {
 
         // then
         verify(blogTemplateService).getTemplatesForTime(any(LocalTime.class));
-        verifyNoInteractions(fashionCrawlerService);
+        verifyNoInteractions(ssadaguIntegrationService);
+        verifyNoInteractions(blogService);
     }
 
     @Test
-    @DisplayName("예약된 템플릿이 있으면 크롤링 및 처리 수행")
+    @DisplayName("예약된 템플릿이 있으면 크롤링, AI 요약, 블로그 저장 수행")
     void collectTemplatesForCurrentSlot_Success() {
         // given
-        BlogTemplate template1 = createMockTemplate(1L, 10L, List.of("패딩", "구두"));
-        BlogTemplate template2 = createMockTemplate(2L, 20L, List.of("코트"));
-
-        List<SsadaguProductDto> products1 = List.of(
-                createMockProduct("패딩"),
-                createMockProduct("구두")
-        );
-        List<SsadaguProductDto> products2 = List.of(
-                createMockProduct("코트")
-        );
+        BlogTemplate template = createMockTemplate(1L, 10L, List.of("패딩", "구두"));
+        SsadaguSummaryResponse response1 = createMockSummaryResponse("패딩");
+        SsadaguSummaryResponse response2 = createMockSummaryResponse("구두");
 
         given(blogTemplateService.getTemplatesForTime(any(LocalTime.class)))
-                .willReturn(List.of(template1, template2));
-        given(fashionCrawlerService.crawlProductsByCategories(template1.getCategories()))
-                .willReturn(products1);
-        given(fashionCrawlerService.crawlProductsByCategories(template2.getCategories()))
-                .willReturn(products2);
+                .willReturn(List.of(template));
+        given(ssadaguIntegrationService.searchAndSummarize(eq("패딩"), anyInt()))
+                .willReturn(response1);
+        given(ssadaguIntegrationService.searchAndSummarize(eq("구두"), anyInt()))
+                .willReturn(response2);
+        given(blogService.createBlogsFromSummaries(anyLong(), anyString(), anyLong(), anyList()))
+                .willReturn(BlogSaveResult.of(2, 0));
 
         // when
         blogTemplateScheduler.collectTemplatesForCurrentSlot();
 
         // then
         verify(blogTemplateService).getTemplatesForTime(any(LocalTime.class));
-        verify(fashionCrawlerService).crawlProductsByCategories(template1.getCategories());
-        verify(fashionCrawlerService).crawlProductsByCategories(template2.getCategories());
+        verify(ssadaguIntegrationService).searchAndSummarize(eq("패딩"), anyInt());
+        verify(ssadaguIntegrationService).searchAndSummarize(eq("구두"), anyInt());
+        verify(blogService).createBlogsFromSummaries(eq(1L), anyString(), eq(10L), anyList());
     }
 
     @Test
@@ -93,26 +101,27 @@ class BlogTemplateSchedulerTest {
 
         // then
         verify(blogTemplateService).getTemplatesForTime(any(LocalTime.class));
-        verifyNoInteractions(fashionCrawlerService);
+        verifyNoInteractions(ssadaguIntegrationService);
+        verifyNoInteractions(blogService);
     }
 
     @Test
-    @DisplayName("크롤링된 상품이 없으면 블로그 생성을 건너뜀")
-    void collectTemplatesForCurrentSlot_NoProductsCrawled() {
+    @DisplayName("AI 요약 결과가 없으면 블로그 저장을 건너뜀")
+    void collectTemplatesForCurrentSlot_NoSummaries() {
         // given
         BlogTemplate template = createMockTemplate(1L, 10L, List.of("존재하지않는카테고리"));
 
         given(blogTemplateService.getTemplatesForTime(any(LocalTime.class)))
                 .willReturn(List.of(template));
-        given(fashionCrawlerService.crawlProductsByCategories(template.getCategories()))
-                .willReturn(List.of());
+        given(ssadaguIntegrationService.searchAndSummarize(anyString(), anyInt()))
+                .willReturn(null);
 
         // when
         blogTemplateScheduler.collectTemplatesForCurrentSlot();
 
         // then
-        verify(fashionCrawlerService).crawlProductsByCategories(template.getCategories());
-        // TODO 생성 서비스 호출 검증은 AI 서비스 구현 후 추가
+        verify(ssadaguIntegrationService).searchAndSummarize(eq("존재하지않는카테고리"), anyInt());
+        verifyNoInteractions(blogService);
     }
 
     @Test
@@ -121,20 +130,24 @@ class BlogTemplateSchedulerTest {
         // given
         BlogTemplate template1 = createMockTemplate(1L, 10L, List.of("패딩"));
         BlogTemplate template2 = createMockTemplate(2L, 20L, List.of("구두"));
+        SsadaguSummaryResponse response2 = createMockSummaryResponse("구두");
 
         given(blogTemplateService.getTemplatesForTime(any(LocalTime.class)))
                 .willReturn(List.of(template1, template2));
-        given(fashionCrawlerService.crawlProductsByCategories(template1.getCategories()))
+        given(ssadaguIntegrationService.searchAndSummarize(eq("패딩"), anyInt()))
                 .willThrow(new RuntimeException("크롤링 실패"));
-        given(fashionCrawlerService.crawlProductsByCategories(template2.getCategories()))
-                .willReturn(List.of(createMockProduct("구두")));
+        given(ssadaguIntegrationService.searchAndSummarize(eq("구두"), anyInt()))
+                .willReturn(response2);
+        given(blogService.createBlogsFromSummaries(anyLong(), anyString(), anyLong(), anyList()))
+                .willReturn(BlogSaveResult.of(1, 0));
 
         // when
         blogTemplateScheduler.collectTemplatesForCurrentSlot();
 
         // then
-        verify(fashionCrawlerService).crawlProductsByCategories(template1.getCategories());
-        verify(fashionCrawlerService).crawlProductsByCategories(template2.getCategories());
+        verify(ssadaguIntegrationService).searchAndSummarize(eq("패딩"), anyInt());
+        verify(ssadaguIntegrationService).searchAndSummarize(eq("구두"), anyInt());
+        verify(blogService).createBlogsFromSummaries(eq(2L), anyString(), eq(20L), anyList());
     }
 
     @Test
@@ -144,7 +157,7 @@ class BlogTemplateSchedulerTest {
         BlogTemplate template = BlogTemplate.builder()
                 .id(1L)
                 .title("테스트 템플릿")
-                .categories(null)  // null 카테고리
+                .categories(null)
                 .platforms(new ArrayList<>(List.of("네이버")))
                 .shopUrl("https://shop.com")
                 .includeImages(true)
@@ -162,7 +175,34 @@ class BlogTemplateSchedulerTest {
 
         // then
         verify(blogTemplateService).getTemplatesForTime(any(LocalTime.class));
-        verifyNoInteractions(fashionCrawlerService);
+        verifyNoInteractions(ssadaguIntegrationService);
+        verifyNoInteractions(blogService);
+    }
+
+    @Test
+    @DisplayName("여러 템플릿이 있으면 각각 블로그 저장 서비스 호출")
+    void collectTemplatesForCurrentSlot_MultipleTemplates() {
+        // given
+        BlogTemplate template1 = createMockTemplate(1L, 10L, List.of("패딩"));
+        BlogTemplate template2 = createMockTemplate(2L, 20L, List.of("구두"));
+        SsadaguSummaryResponse response1 = createMockSummaryResponse("패딩");
+        SsadaguSummaryResponse response2 = createMockSummaryResponse("구두");
+
+        given(blogTemplateService.getTemplatesForTime(any(LocalTime.class)))
+                .willReturn(List.of(template1, template2));
+        given(ssadaguIntegrationService.searchAndSummarize(eq("패딩"), anyInt()))
+                .willReturn(response1);
+        given(ssadaguIntegrationService.searchAndSummarize(eq("구두"), anyInt()))
+                .willReturn(response2);
+        given(blogService.createBlogsFromSummaries(anyLong(), anyString(), anyLong(), anyList()))
+                .willReturn(BlogSaveResult.of(1, 0));
+
+        // when
+        blogTemplateScheduler.collectTemplatesForCurrentSlot();
+
+        // then
+        verify(blogService).createBlogsFromSummaries(eq(1L), anyString(), eq(10L), anyList());
+        verify(blogService).createBlogsFromSummaries(eq(2L), anyString(), eq(20L), anyList());
     }
 
     private BlogTemplate createMockTemplate(Long id, Long userId, List<String> categories) {
@@ -180,9 +220,9 @@ class BlogTemplateSchedulerTest {
                 .build();
     }
 
-    private SsadaguProductDto createMockProduct(String category) {
-        return SsadaguProductDto.builder()
-                .productName("테스트 " + category)
+    private SsadaguSummaryResponse createMockSummaryResponse(String category) {
+        SsadaguProductDto product = SsadaguProductDto.builder()
+                .productName("테스트 " + category + " 상품")
                 .productUrl("https://ssadagu.kr/test")
                 .price(29900)
                 .rating(4.5)
@@ -191,5 +231,7 @@ class BlogTemplateSchedulerTest {
                 .category(category)
                 .productAttributes(Map.of("소재", "폴리에스터"))
                 .build();
+
+        return SsadaguSummaryResponse.from(product, category + " 추천 상품", "이것은 테스트 AI 요약입니다. " + category + " 상품 추천!");
     }
 }

@@ -54,12 +54,12 @@ public class SsadaguIntegrationService {
 
         log.info("Found product: {} (price: {})", product.productName(), product.price());
 
-        // 2. AI 요약 생성
-        String summary = ssadaguSummaryService.summary(product, resolvedCharLimit);
+        // 2. AI 제목 + 요약 생성
+        SsadaguSummaryService.TitleAndSummary result = ssadaguSummaryService.summaryWithTitle(product, resolvedCharLimit);
 
-        log.info("Generated summary for product: {} (length: {})", product.productName(), summary.length());
+        log.info("Generated title: {}, summary length: {}", result.title(), result.summary().length());
 
-        return SsadaguSummaryResponse.from(product, summary);
+        return SsadaguSummaryResponse.from(product, result.title(), result.summary());
     }
 
     /**
