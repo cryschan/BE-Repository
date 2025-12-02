@@ -40,7 +40,8 @@ public class SecurityConfig {
      */
     private static final String[] PUBLIC_WHITELIST = {
             "/api/auth/**",
-            "/api/faqs/**"
+            "/api/faqs/**",
+            "/actuator/**"
     };
 
     @Bean

@@ -13,6 +13,9 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
     // 특정 유저의 블로그 목록 조회 (최신순)
     Page<Blog> findAllByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
+    // 카테고리 필터링
+    Page<Blog> findAllByUserIdAndCategoryOrderByCreatedAtDesc(Long userId, String category, Pageable pageable);
+
     // 기간별 블로그 개수
     Integer countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 

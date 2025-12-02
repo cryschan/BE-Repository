@@ -29,7 +29,7 @@ spring:
           temperature: ${OPENAI_TEMPERATURE}
 
 server:
-  port: ${SERVER_PORT}
+  port: ${SERVER_PORT:8080}
 
 # Swagger 간단 설정
 springdoc:
@@ -44,6 +44,17 @@ jwt:
   secret: ${JWT_SECRET:default-secret-key-for-development-only-change-in-production}  # 환경변수에서 읽기
   access-token-expiration: ${JWT_ACCESS_EXPIRATION}  # 1시간 (밀리초)
   refresh-token-expiration: ${JWT_REFRESH_EXPIRATION}  # 7일 (밀리초)
+
+# AWS S3
+cloud:
+  aws:
+    s3:
+      bucket: fastcampus-finalproject-bucket
+    region:
+      static: ap-northeast-2
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID}
+      secret-key: ${AWS_SECRET_ACCESS_KEY}
 
 # Initial Data Configuration
 init:

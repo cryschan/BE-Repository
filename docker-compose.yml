@@ -17,26 +17,45 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: final-app
+    depends_on:
+      - postgres
     ports:
       - "${SERVER_PORT:-8080}:8080"
+
     environment:
+      # Spring Profile
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-default}
-      # OpenAI Configuration
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-3.5-turbo}
-      - OPENAI_TEMPERATURE=${OPENAI_TEMPERATURE:-0.7}
-      # Database Configuration
+
+      # Server
+      - SERVER_PORT=${SERVER_PORT:-8080}
+
+      # Database Configuration (Spring Boot will use these)
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=${DB_NAME:-test_db}
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
+
+      # JPA & Hibernate
       - DDL_AUTO=${DDL_AUTO:-update}
       - SHOW_SQL=${SHOW_SQL:-true}
+
+      # Logging
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
-    depends_on:
-      - postgres
-    restart: on-failure
+
+      # JWT Configuration
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ACCESS_EXPIRATION=${JWT_ACCESS_EXPIRATION:-3600000}
+      - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION:-604800000}
+
+      # Spring AI / OpenAI
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-3.5-turbo}
+      - OPENAI_TEMPERATURE=${OPENAI_TEMPERATURE:-0.7}
+
+      # AWS S3 Credentials
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
 volumes:
   postgres_data:
