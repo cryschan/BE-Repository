@@ -35,11 +35,13 @@ public class Dashboard {
     @Column(columnDefinition = "TEXT")
     private String todayBlogList;       // 금일 게시글 목록
 
+    private Long totalTokenUsage;       // 사용한 토큰 수
+
     // 대시보드 기준 날짜 (날짜별 중복 저장 방지용)
     private LocalDateTime date;
 
     @Builder
-    public Dashboard(Long adminUserId, Integer activeUserCount, Integer todayBlogCount, Integer totalBlogCount, String categoryDistribution, String platformUsage, String todayBlogList, LocalDateTime date) {
+    public Dashboard(Long adminUserId, Integer activeUserCount, Integer todayBlogCount, Integer totalBlogCount, String categoryDistribution, String platformUsage, String todayBlogList, Long totalTokenUsage, LocalDateTime date) {
         this.adminUserId = adminUserId;
         this.activeUserCount = activeUserCount;
         this.todayBlogCount = todayBlogCount;
@@ -47,6 +49,7 @@ public class Dashboard {
         this.categoryDistribution = categoryDistribution;
         this.platformUsage = platformUsage;
         this.todayBlogList = todayBlogList;
+        this.totalTokenUsage = totalTokenUsage;
         this.date = date;
     }
 
@@ -61,7 +64,8 @@ public class Dashboard {
             Integer totalBlogCount,
             String categoryDistribution,
             String platformUsage,
-            String todayBlogList
+            String todayBlogList,
+            Long totalTokenUsage
     ) {
         this.adminUserId = adminUserId;
         this.activeUserCount = activeUserCount;
@@ -70,6 +74,7 @@ public class Dashboard {
         this.categoryDistribution = categoryDistribution;
         this.platformUsage = platformUsage;
         this.todayBlogList = todayBlogList;
+        this.totalTokenUsage = totalTokenUsage;
     }
 
 }

@@ -102,7 +102,8 @@ class DashboardControllerTest {
                     categoryDistribution,  // categoryDistribution
                     platformUsage,  // platformUsage
                     List.of(),  // todayBlogItemList
-                    1000L  // totalTokenUsage
+                    1000L,  // totalTokenUsage
+                    null  // comparison (테스트에서는 null)
             );
 
             given(dashboardService.getDashboardData(adminUserId)).willReturn(dashboardResponse);
