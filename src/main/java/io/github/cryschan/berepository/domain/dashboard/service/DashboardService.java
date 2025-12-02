@@ -178,7 +178,9 @@ public class DashboardService {
                             platform,
                             blog.getCreatedAt(),
                             username,
-                            blog.getCategory()
+                            blog.getCategory(),
+                            blog.getPublishStatus(),
+                            blog.getFailureReason()
                     );
                 })
                 .collect(Collectors.toList());
