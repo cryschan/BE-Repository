@@ -5,6 +5,7 @@ import io.github.cryschan.berepository.domain.blog.dto.response.BlogPageResponse
 import io.github.cryschan.berepository.domain.blog.dto.response.BlogResponse;
 import io.github.cryschan.berepository.domain.blog.dto.response.BlogSaveResult;
 import io.github.cryschan.berepository.domain.blog.entity.Blog;
+import io.github.cryschan.berepository.domain.blog.entity.BlogPublishStatus;
 import io.github.cryschan.berepository.domain.blog.exception.BlogException;
 import io.github.cryschan.berepository.domain.blog.repository.BlogRepository;
 import io.github.cryschan.berepository.domain.fashion.dto.response.SsadaguProductDto;
@@ -57,6 +58,7 @@ class BlogServiceTest {
                 .content("여름철 필수 아이템...")
                 .category("상의")
                 .userId(1L)
+                .publishStatus(BlogPublishStatus.PUBLISHED)
                 .build();
         ReflectionTestUtils.setField(blog1, "id", 1L);
 
@@ -66,6 +68,7 @@ class BlogServiceTest {
                 .content("따뜻한 니트...")
                 .category("상의")
                 .userId(1L)
+                .publishStatus(BlogPublishStatus.PUBLISHED)
                 .build();
         ReflectionTestUtils.setField(blog2, "id", 2L);
 
@@ -75,6 +78,7 @@ class BlogServiceTest {
                 .content("일상생활에서...")
                 .category("신발")
                 .userId(1L)
+                .publishStatus(BlogPublishStatus.PUBLISHED)
                 .build();
         ReflectionTestUtils.setField(blog3, "id", 3L);
     }
@@ -658,6 +662,7 @@ class BlogServiceTest {
             assertThat(result.successCount()).isEqualTo(1);
             assertThat(result.failCount()).isEqualTo(1);
 
+            // 단위 테스트에서는 self가 null이므로 성공한 블로그만 저장됨
             verify(blogRepository, times(1)).save(any(Blog.class));
         }
 
@@ -676,7 +681,7 @@ class BlogServiceTest {
             // 첫 번째 저장은 실패, 두 번째는 성공
             given(blogRepository.save(any(Blog.class)))
                     .willThrow(new RuntimeException("DB 오류"))
-                    .willAnswer(invocation -> invocation.getArgument(0));
+                    .willAnswer(invocation -> invocation.getArgument(0)); // 두 번째 블로그 저장
 
             // when
             BlogSaveResult result = blogService.createBlogsFromSummaries(templateId, templateTitle, userId, summaries);
@@ -685,6 +690,7 @@ class BlogServiceTest {
             assertThat(result.successCount()).isEqualTo(1);
             assertThat(result.failCount()).isEqualTo(1);
 
+            // 첫 번째 저장 시도 실패 -> 두 번째 블로그 저장 = 총 2번
             verify(blogRepository, times(2)).save(any(Blog.class));
         }
 
@@ -709,28 +715,29 @@ class BlogServiceTest {
         }
 
         @Test
-        @DisplayName("성공: 긴 상품명은 50자로 잘린다")
+        @DisplayName("성공: 긴 AI 제목은 50자로 잘린다")
         void createBlogsFromSummaries_TruncateLongProductName() {
             // given
             Long templateId = 1L;
             String templateTitle = "패션 추천";
             Long userId = 10L;
 
-            String longProductName = "A".repeat(100);  // 100자 상품명
+            String longTitle = "A".repeat(100);  // 100자 AI 제목
             SsadaguProductDto product = SsadaguProductDto.builder()
-                    .productName(longProductName)
+                    .productName("테스트 상품")
                     .productUrl("https://test.com")
                     .price(10000)
                     .category("패딩")
                     .build();
-            SsadaguSummaryResponse response = SsadaguSummaryResponse.from(product, "긴 제목 테스트", "요약");
+            SsadaguSummaryResponse response = SsadaguSummaryResponse.from(product, longTitle, "요약");
             List<SsadaguSummaryResponse> summaries = List.of(response);
 
             given(blogRepository.save(any(Blog.class))).willAnswer(invocation -> {
                 Blog savedBlog = invocation.getArgument(0);
-                // 제목에 잘린 상품명이 포함되어 있는지 확인
+                // AI 제목이 50자로 잘렸는지 확인
                 assertThat(savedBlog.getTitle()).contains("...");
-                assertThat(savedBlog.getTitle().length()).isLessThan(200);
+                assertThat(savedBlog.getTitle().length()).isEqualTo(50);  // "AAA...AAA..." = 50자
+                assertThat(savedBlog.getPublishStatus()).isEqualTo(BlogPublishStatus.PUBLISHED);
                 return savedBlog;
             });
 
