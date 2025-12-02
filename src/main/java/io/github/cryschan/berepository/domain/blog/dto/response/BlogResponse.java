@@ -2,6 +2,7 @@ package io.github.cryschan.berepository.domain.blog.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.cryschan.berepository.domain.blog.entity.Blog;
+import io.github.cryschan.berepository.domain.blog.entity.BlogPublishStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -41,6 +42,12 @@ public class BlogResponse {
     @JsonProperty("isToday")  // JSON 필드명 명시
     private boolean isToday;
 
+    @Schema(description = "발행 상태", example = "PUBLISHED")
+    private BlogPublishStatus publishStatus;
+
+    @Schema(description = "발행 실패 사유 (실패한 경우에만)", example = "카테고리가 null")
+    private String failureReason;
+
     public static BlogResponse from(Blog blog) {
         return BlogResponse.builder()
                 .id(blog.getId())
@@ -51,6 +58,8 @@ public class BlogResponse {
                 .createdAt(blog.getCreatedAt())
                 .updatedAt(blog.getUpdatedAt())
                 .isToday(isCreatedToday(blog.getCreatedAt()))
+                .publishStatus(blog.getPublishStatus())
+                .failureReason(blog.getFailureReason())
                 .build();
     }
 

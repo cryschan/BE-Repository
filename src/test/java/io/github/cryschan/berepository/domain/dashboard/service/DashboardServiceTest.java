@@ -2,6 +2,7 @@ package io.github.cryschan.berepository.domain.dashboard.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.cryschan.berepository.domain.blog.entity.Blog;
+import io.github.cryschan.berepository.domain.blog.entity.BlogPublishStatus;
 import io.github.cryschan.berepository.domain.blog.repository.BlogRepository;
 import io.github.cryschan.berepository.domain.blogtemplate.entity.BlogTemplate;
 import io.github.cryschan.berepository.domain.blogtemplate.repository.BlogTemplateRepository;
@@ -108,6 +109,7 @@ class DashboardServiceTest {
                 .content("내용 1")
                 .category("패션")
                 .userId(1L)
+                .publishStatus(BlogPublishStatus.PUBLISHED)
                 .build();
         ReflectionTestUtils.setField(blog1, "id", 1L);
 
@@ -117,6 +119,7 @@ class DashboardServiceTest {
                 .content("내용 2")
                 .category("패션")
                 .userId(2L)
+                .publishStatus(BlogPublishStatus.PUBLISHED)
                 .build();
         ReflectionTestUtils.setField(blog2, "id", 2L);
 
@@ -126,6 +129,7 @@ class DashboardServiceTest {
                 .content("내용 3")
                 .category("뷰티")
                 .userId(3L)
+                .publishStatus(BlogPublishStatus.PUBLISHED)
                 .build();
         ReflectionTestUtils.setField(blog3, "id", 3L);
 
@@ -136,6 +140,7 @@ class DashboardServiceTest {
                 .content("오늘 작성된 내용")
                 .category("패션")
                 .userId(1L)
+                .publishStatus(BlogPublishStatus.PUBLISHED)
                 .build();
         ReflectionTestUtils.setField(todayBlog, "id", 4L);
     }
@@ -242,7 +247,9 @@ class DashboardServiceTest {
                     .content("내용")
                     .category("기타")
                     .userId(1L)
+                    .publishStatus(BlogPublishStatus.PUBLISHED)
                     .build();
+            ReflectionTestUtils.setField(invalidBlog, "id", 999L);
 
             List<Blog> allBlogs = List.of(blog1, invalidBlog);
             List<BlogTemplate> allTemplates = List.of(template1);
@@ -287,7 +294,9 @@ class DashboardServiceTest {
                     .content("내용")
                     .category("기타")
                     .userId(1L)
+                    .publishStatus(BlogPublishStatus.PUBLISHED)
                     .build();
+            ReflectionTestUtils.setField(blogWithNoPlatform, "id", 5L);
 
             List<Blog> todayBlogs = List.of(blogWithNoPlatform);
             List<BlogTemplate> allTemplates = List.of(noPlatformTemplate);

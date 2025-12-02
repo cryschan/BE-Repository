@@ -29,7 +29,9 @@ public class SsadaguCrawler {
     private static final String SSADAGU_BASE_URL = "https://ssadagu.kr";
     private static final String SEARCH_API_URL = SSADAGU_BASE_URL + "/shop/ajax.infinity_shop_list.php";
     private static final String SEARCH_URL_PATTERN = SSADAGU_BASE_URL + "/shop/search.php?ss_tx=%s";
-    private static final int TIMEOUT_MS = 10000;
+    private static final int TIMEOUT_MS = 15000;  // 15초로 증가
+    private static final int MAX_RETRIES = 3;      // 최대 재시도 횟수
+    private static final int RETRY_DELAY_MS = 2000;  // 재시도 간 대기 시간 (2초)
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
     private final ObjectMapper objectMapper;
@@ -50,7 +52,8 @@ public class SsadaguCrawler {
 
         try {
             // 1단계: 검색 API 호출
-            String productUrl = searchProductUrlViaApi(category);
+            SearchResult searchResult = searchProductUrlViaApi(category);
+            String productUrl = searchResult != null ? searchResult.productUrl() : null;
 
             if (productUrl == null) {
                 log.warn("No product found for category: {}", category);
@@ -61,24 +64,31 @@ public class SsadaguCrawler {
 
             // 2단계: 상품 상세 페이지 방문
             log.debug("Fetching product detail from: {}", productUrl);
-            Document productDoc = Jsoup.connect(productUrl)
-                    .userAgent(USER_AGENT)
-                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8")
-                    .header("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7")
-                    .header("Accept-Encoding", "gzip, deflate, br")
-                    .header("Connection", "keep-alive")
-                    .referrer(SSADAGU_BASE_URL)
-                    .timeout(TIMEOUT_MS)
-                    .get();
+            Document productDoc = executeWithRetry(() ->
+                    Jsoup.connect(productUrl)
+                            .userAgent(USER_AGENT)
+                            .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8")
+                            .header("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7")
+                            .header("Accept-Encoding", "gzip, deflate, br")
+                            .header("Connection", "keep-alive")
+                            .cookies(searchResult != null ? searchResult.cookies() : Map.of())
+                            .referrer(SSADAGU_BASE_URL)
+                            .timeout(TIMEOUT_MS)
+                            .get(),
+                    category,
+                    "product detail fetch"
+            );
+
+            if (productDoc == null) {
+                log.warn("Failed to fetch product detail after retries: {}", productUrl);
+                return null;
+            }
 
             // 3단계: 상품 정보 추출
             return extractProductInfo(productDoc, productUrl, category);
 
-        } catch (IOException e) {
-            log.error("Failed to fetch Ssadagu product for category: {}", category, e);
-            return null;
         } catch (Exception e) {
-            log.error("Unexpected error while fetching Ssadagu product for category: {}", category, e);
+            log.error("Failed to fetch Ssadagu product for category: {}", category, e);
             return null;
         }
     }
@@ -89,7 +99,7 @@ public class SsadaguCrawler {
      * @param keyword 검색 키워드
      * @return 첫 번째 상품 URL (검색 결과가 없으면 null)
      */
-    private String searchProductUrlViaApi(String keyword) {
+    private SearchResult searchProductUrlViaApi(String keyword) {
         try {
             String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
 
@@ -97,40 +107,56 @@ public class SsadaguCrawler {
             String searchPageUrl = String.format(SEARCH_URL_PATTERN, encodedKeyword);
             log.debug("Step 1: Visiting search page to get session cookies: {}", searchPageUrl);
 
-            Map<String, String> cookies = Jsoup.connect(searchPageUrl)
-                    .userAgent(USER_AGENT)
-                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
-                    .header("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7")
-                    .timeout(TIMEOUT_MS)
-                    .execute()
-                    .cookies();
+            Map<String, String> cookies = executeWithRetry(() ->
+                    Jsoup.connect(searchPageUrl)
+                            .userAgent(USER_AGENT)
+                            .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
+                            .header("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7")
+                            .timeout(TIMEOUT_MS)
+                            .execute()
+                            .cookies(),
+                    keyword,
+                    "search page visit"
+            );
+
+            if (cookies == null) {
+                return null;
+            }
 
             log.debug("Received {} cookies from search page", cookies.size());
 
             // 2단계: 받은 쿠키와 함께 API 호출
             String requestBody = String.format(
-                "page_div_id=infinity_item_list&page_type=pc&ss_tx=%s&page=1",
-                encodedKeyword
+                    "page_div_id=infinity_item_list&page_type=pc&ss_tx=%s&page=1",
+                    encodedKeyword
             );
 
             log.debug("Step 2: Calling Ssadagu search API with keyword: {}", keyword);
 
             // API 호출 (쿠키 포함)
-            Connection.Response response = Jsoup.connect(SEARCH_API_URL)
-                    .userAgent(USER_AGENT)
-                    .header("Accept", "application/json, text/javascript, */*; q=0.01")
-                    .header("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7")
-                    .header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
-                    .header("Origin", SSADAGU_BASE_URL)
-                    .header("Referer", searchPageUrl)
-                    .header("X-Requested-With", "XMLHttpRequest")  // AJAX 표시
-                    .cookies(cookies)  // 받은 쿠키 전달
-                    .requestBody(requestBody)
-                    .ignoreContentType(true)
-                    .maxBodySize(0)  // 바디 사이즈 제한 제거 (기본값 2MB)
-                    .timeout(TIMEOUT_MS)
-                    .method(Connection.Method.POST)
-                    .execute();
+            Connection.Response response = executeWithRetry(() ->
+                    Jsoup.connect(SEARCH_API_URL)
+                            .userAgent(USER_AGENT)
+                            .header("Accept", "application/json, text/javascript, */*; q=0.01")
+                            .header("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7")
+                            .header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+                            .header("Origin", SSADAGU_BASE_URL)
+                            .header("Referer", searchPageUrl)
+                            .header("X-Requested-With", "XMLHttpRequest")  // AJAX 표시
+                            .cookies(cookies)  // 받은 쿠키 전달
+                            .requestBody(requestBody)
+                            .ignoreContentType(true)
+                            .maxBodySize(0)  // 바디 사이즈 제한 제거 (기본값 2MB)
+                            .timeout(TIMEOUT_MS)
+                            .method(Connection.Method.POST)
+                            .execute(),
+                    keyword,
+                    "API call"
+            );
+
+            if (response == null) {
+                return null;
+            }
 
             // JSON 응답 파싱 (인코딩 명시)
             String jsonResponse = response.body();
@@ -190,7 +216,7 @@ public class SsadaguCrawler {
 
             log.info("Successfully extracted product URL: {}", productUrl);
 
-            return productUrl;
+            return new SearchResult(productUrl, cookies);
 
         } catch (IOException e) {
             log.error("Failed to call Ssadagu search API for keyword: {}", keyword, e);
@@ -436,4 +462,39 @@ public class SsadaguCrawler {
 
         return attributes;
     }
+
+    /**
+     * 공통 재시도 래퍼: 단계별로 최대 N회 재시도하며 사이에 딜레이를 둔다.
+     */
+    private <T> T executeWithRetry(RetryableSupplier<T> action, String keyword, String stage) {
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                return action.run();
+            } catch (IOException e) {
+                log.warn("Retry {}/{} during {} for keyword '{}': {}", attempt, MAX_RETRIES, stage, keyword, e.getMessage());
+                sleepQuietly(RETRY_DELAY_MS);
+            } catch (Exception e) {
+                log.error("Unexpected error during {} for keyword '{}'", stage, keyword, e);
+                return null;
+            }
+        }
+
+        log.error("Exceeded max retries ({}) during {} for keyword '{}'", MAX_RETRIES, stage, keyword);
+        return null;
+    }
+
+    private void sleepQuietly(long delayMs) {
+        try {
+            Thread.sleep(delayMs);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    @FunctionalInterface
+    private interface RetryableSupplier<T> {
+        T run() throws Exception;
+    }
+
+    private record SearchResult(String productUrl, Map<String, String> cookies) { }
 }
