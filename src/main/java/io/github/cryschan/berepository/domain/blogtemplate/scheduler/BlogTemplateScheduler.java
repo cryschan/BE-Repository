@@ -74,11 +74,11 @@ public class BlogTemplateScheduler {
             log.info("[{}/{}] 카테고리 '{}' 처리 시작", i + 1, categories.size(), category);
 
             try {
-                log.debug("  → 싸다구 크롤링 시작: {}", category);
+                log.debug("  → 무신사 랭킹 크롤링 → 싸다구 검색 시작: {}", category);
                 long startTime = System.currentTimeMillis();
 
                 SsadaguSummaryResponse response =
-                        ssadaguIntegrationService.searchAndSummarize(category, charLimit);
+                        ssadaguIntegrationService.searchAndSummarizeByCategoryName(category, charLimit);
 
                 long elapsed = System.currentTimeMillis() - startTime;
 
@@ -94,6 +94,19 @@ public class BlogTemplateScheduler {
                 }
             } catch (Exception e) {
                 log.error("[{}/{}] 카테고리 '{}' 처리 실패: {}", i + 1, categories.size(), category, e.getMessage(), e);
+            }
+
+            // 다음 카테고리 처리 전 대기 (봇 탐지 회피 + 서버 부하 방지)
+            // 마지막 카테고리는 대기하지 않음
+            if (i < categories.size() - 1) {
+                try {
+                    int delaySeconds = 3;
+                    log.debug("다음 카테고리 처리 전 {}초 대기...", delaySeconds);
+                    Thread.sleep(delaySeconds * 1000L);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    log.warn("카테고리 간 대기 중 인터럽트 발생", e);
+                }
             }
         }
 

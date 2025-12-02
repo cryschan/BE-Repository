@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 싸다구 상품 검색 + AI 요약 통합 서비스
@@ -25,6 +26,19 @@ public class SsadaguIntegrationService {
 
     private static final int DEFAULT_CHAR_LIMIT = 200;
     private static final int DEFAULT_LIMIT = 5;
+
+    /**
+     * 사용자 카테고리명 → 무신사 카테고리 코드 매핑
+     * 무신사 랭킹 페이지 실제 categoryCode 파라미터 값
+     */
+    private static final Map<String, String> CATEGORY_CODE_MAP = Map.of(
+            "상의", "001000",
+            "아우터", "002000",
+            "바지", "003000",
+            "가방", "004000",
+            "신발", "103000",
+            "패션소품", "101000"
+    );
 
     private final MusinsaRankingCrawler musinsaRankingCrawler;
     private final MusinsaProductDetailCrawler musinsaProductDetailCrawler;
@@ -114,5 +128,71 @@ public class SsadaguIntegrationService {
 
         log.info("Crawl and summarize completed. Generated {} summaries", results.size());
         return results;
+    }
+
+    /**
+     * 카테고리명으로 무신사 랭킹 크롤링 + 싸다구 검색 + AI 요약
+     * <p>
+     * 스케줄러에서 사용하는 메서드로, 사용자가 선택한 카테고리(예: "상의", "바지")를 기반으로:
+     * 1. 무신사 랭킹에서 해당 카테고리의 상위 상품 URL 가져오기
+     * 2. 각 URL에서 구체적인 카테고리 추출 (예: "숏패딩", "겨울 싱글 코트")
+     * 3. 추출된 카테고리로 싸다구에서 상품 검색
+     * 4. AI 요약 생성
+     *
+     * @param categoryName 사용자 카테고리명 (예: "상의", "바지", "아우터", "신발", "가방", "패션소품")
+     * @param charLimit AI 요약 글자수 제한
+     * @return 상품 정보 + AI 요약 응답 (검색 실패 시 null)
+     */
+    public SsadaguSummaryResponse searchAndSummarizeByCategoryName(String categoryName, Integer charLimit) {
+        int resolvedCharLimit = (charLimit == null || charLimit <= 0) ? DEFAULT_CHAR_LIMIT : charLimit;
+
+        log.info("Starting Musinsa-based search for category name: {}", categoryName);
+
+        // 1. 카테고리명 → 무신사 카테고리 코드 변환
+        String categoryCode = CATEGORY_CODE_MAP.get(categoryName);
+        if (categoryCode == null) {
+            log.warn("Unknown category name: {}. Falling back to direct Ssadagu search", categoryName);
+            // 카테고리 코드를 찾을 수 없으면 기존 방식(싸다구 직접 검색)으로 폴백
+            return searchAndSummarize(categoryName, resolvedCharLimit);
+        }
+
+        log.info("Mapped category '{}' to Musinsa code '{}'", categoryName, categoryCode);
+
+        try {
+            // 2. 무신사 랭킹에서 해당 카테고리의 상위 1개 상품 URL 가져오기
+            List<MusinsaRankingLinkDto> rankingLinks = musinsaRankingCrawler.fetchTopLinksByCategory(categoryCode, 1);
+
+            if (rankingLinks.isEmpty()) {
+                log.warn("No ranking links found for category code: {}", categoryCode);
+                // 무신사에서 못 찾으면 기존 방식으로 폴백
+                return searchAndSummarize(categoryName, resolvedCharLimit);
+            }
+
+            String musinsaUrl = rankingLinks.get(0).href();
+            log.info("Found Musinsa product (rank {}): {}", rankingLinks.get(0).rank(), musinsaUrl);
+
+            // 3. 무신사 상품 페이지에서 구체적인 카테고리 추출
+            String specificCategory = musinsaProductDetailCrawler.extractCategory(musinsaUrl);
+            if (specificCategory == null || specificCategory.isBlank()) {
+                log.warn("Failed to extract specific category from: {}. Using category name instead", musinsaUrl);
+                specificCategory = categoryName;
+            } else {
+                log.info("Extracted specific category: {}", specificCategory);
+            }
+
+            // 4. 추출된 카테고리로 싸다구 검색 + AI 요약
+            SsadaguSummaryResponse response = searchAndSummarize(specificCategory, resolvedCharLimit);
+
+            if (response != null) {
+                log.info("Successfully generated summary for category: {} (specific: {})", categoryName, specificCategory);
+            }
+
+            return response;
+
+        } catch (Exception e) {
+            log.error("Failed to process category name: {}. Falling back to direct search", categoryName, e);
+            // 에러 발생 시 기존 방식으로 폴백
+            return searchAndSummarize(categoryName, resolvedCharLimit);
+        }
     }
 }
