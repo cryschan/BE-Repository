@@ -2,6 +2,7 @@ package io.github.cryschan.berepository.domain.dashboard.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.cryschan.berepository.domain.blog.entity.Blog;
+import io.github.cryschan.berepository.domain.blog.entity.BlogPublishStatus;
 import io.github.cryschan.berepository.domain.blog.repository.BlogRepository;
 import io.github.cryschan.berepository.domain.blogtemplate.entity.BlogTemplate;
 import io.github.cryschan.berepository.domain.blogtemplate.repository.BlogTemplateRepository;
@@ -104,7 +105,9 @@ class DashboardServiceTest {
                 .blogTemplateId(1L)
                 .title("패션 블로그 1")
                 .content("내용 1")
+                .category("패션")
                 .userId(1L)
+                .publishStatus(BlogPublishStatus.PUBLISHED)
                 .build();
         ReflectionTestUtils.setField(blog1, "id", 1L);
 
@@ -112,7 +115,9 @@ class DashboardServiceTest {
                 .blogTemplateId(1L)
                 .title("패션 블로그 2")
                 .content("내용 2")
+                .category("의류")
                 .userId(2L)
+                .publishStatus(BlogPublishStatus.PUBLISHED)
                 .build();
         ReflectionTestUtils.setField(blog2, "id", 2L);
 
@@ -120,7 +125,9 @@ class DashboardServiceTest {
                 .blogTemplateId(2L)
                 .title("뷰티 블로그 1")
                 .content("내용 3")
+                .category("뷰티")
                 .userId(3L)
+                .publishStatus(BlogPublishStatus.PUBLISHED)
                 .build();
         ReflectionTestUtils.setField(blog3, "id", 3L);
 
@@ -129,7 +136,9 @@ class DashboardServiceTest {
                 .blogTemplateId(1L)
                 .title("오늘의 블로그")
                 .content("오늘 작성된 내용")
+                .category("일상")
                 .userId(1L)
+                .publishStatus(BlogPublishStatus.PUBLISHED)
                 .build();
         ReflectionTestUtils.setField(todayBlog, "id", 4L);
     }
@@ -235,8 +244,11 @@ class DashboardServiceTest {
                     .blogTemplateId(999L)  // 존재하지 않는 템플릿 ID
                     .title("유효하지 않은 템플릿 블로그")
                     .content("내용")
+                    .category("기타")
                     .userId(1L)
+                    .publishStatus(BlogPublishStatus.PUBLISHED)
                     .build();
+            ReflectionTestUtils.setField(invalidBlog, "id", 999L);
 
             List<Blog> allBlogs = List.of(blog1, invalidBlog);
             List<BlogTemplate> allTemplates = List.of(template1);
@@ -283,8 +295,11 @@ class DashboardServiceTest {
                     .blogTemplateId(3L)
                     .title("플랫폼 없는 블로그")
                     .content("내용")
+                    .category("기타")
                     .userId(1L)
+                    .publishStatus(BlogPublishStatus.PUBLISHED)
                     .build();
+            ReflectionTestUtils.setField(blogWithNoPlatform, "id", 5L);
 
             List<Blog> todayBlogs = List.of(blogWithNoPlatform);
             List<BlogTemplate> allTemplates = List.of(noPlatformTemplate);
