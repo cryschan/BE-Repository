@@ -1,8 +1,6 @@
 package io.github.cryschan.berepository.domain.notice.service;
 
-import io.github.cryschan.berepository.domain.notice.dto.NoticeCreateRequest;
-import io.github.cryschan.berepository.domain.notice.dto.NoticeDetailDto;
-import io.github.cryschan.berepository.domain.notice.dto.NoticeListItemDto;
+import io.github.cryschan.berepository.domain.notice.dto.*;
 import io.github.cryschan.berepository.domain.notice.entity.Notice;
 import io.github.cryschan.berepository.domain.notice.exception.NoticeAccessDeniedException;
 import io.github.cryschan.berepository.domain.notice.exception.NoticeNotFoundException;
@@ -125,6 +123,37 @@ public class NoticeService {
         Notice savedNotice = noticeRepository.save(notice);
 
         return savedNotice.getId();
+    }
+
+    public NoticeUpdateResponse updateNotice(Long id, NoticeUpdateRequest request, Long userId) {
+        // 1. 인증 체크
+        if (userId == null) {
+            throw new NoticeAccessDeniedException("인증이 필요합니다.");
+        }
+
+        // 2. 관리자 권한 체크
+        boolean isAdmin = userRepository.findRoleById(userId)
+                .map(role -> role == UserRole.ADMIN)
+                .orElse(false);
+
+        if (!isAdmin) {
+            throw new NoticeAccessDeniedException("공지사항 수정은 관리자만 가능합니다.");
+        }
+
+        // 3. 기존 공지 조회
+        Notice notice = noticeRepository.findById(id)
+                .orElseThrow(() -> new NoticeNotFoundException(id));
+
+        // 4. 수정
+        notice.updateContent(request.title(), request.content());
+
+        if (request.isImportant()) {
+            notice.markAsImportant();
+        } else {
+            notice.unmarkAsImportant();
+        }
+
+        return new NoticeUpdateResponse(notice.getId(), "공지사항 수정 완료");
     }
 
 }
