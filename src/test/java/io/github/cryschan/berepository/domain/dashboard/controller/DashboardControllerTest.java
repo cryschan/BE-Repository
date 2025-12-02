@@ -52,7 +52,7 @@ class DashboardControllerTest {
         void getDashboard_Unauthorized_NoToken() throws Exception {
             // given - Principal이 null인 경우 (토큰 없이 호출)
             // when & then
-            mockMvc.perform(get("/api/dashboard")
+            mockMvc.perform(get("/api/admin/dashboard")
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.code").value("U004"))
@@ -71,7 +71,7 @@ class DashboardControllerTest {
                     .willThrow(UserException.accessDenied("대시보드"));
 
             // when & then
-            mockMvc.perform(get("/api/dashboard")
+            mockMvc.perform(get("/api/admin/dashboard")
                             .principal(principal)
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isForbidden())
@@ -109,7 +109,7 @@ class DashboardControllerTest {
             given(dashboardService.getDashboardData(adminUserId)).willReturn(dashboardResponse);
 
             // when & then
-            mockMvc.perform(get("/api/dashboard")
+            mockMvc.perform(get("/api/admin/dashboard")
                             .principal(principal)
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
@@ -121,7 +121,8 @@ class DashboardControllerTest {
                     .andExpect(jsonPath("$.categoryDistribution.의류").value(8))
                     .andExpect(jsonPath("$.platformUsage.네이버").value(50))
                     .andExpect(jsonPath("$.platformUsage.카카오").value(30))
-                    .andExpect(jsonPath("$.totalTokenUsage").value(1000));
+                    .andExpect(jsonPath("$.totalTokenUsage").value(1000))
+                    .andExpect(jsonPath("$.comparison").isEmpty());
         }
     }
 }

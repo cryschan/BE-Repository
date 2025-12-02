@@ -193,6 +193,8 @@ class DashboardServiceTest {
             assertThat(response.getTodayBlogItemList()).isNotNull();
             assertThat(response.getTodayBlogItemList()).hasSize(1);
             assertThat(response.getTodayBlogItemList().get(0).getTitle()).isEqualTo("오늘의 블로그");
+            assertThat(response.getTodayBlogItemList().get(0).getPublishStatus()).isEqualTo(BlogPublishStatus.PUBLISHED);
+            assertThat(response.getTodayBlogItemList().get(0).getFailureReason()).isNull();
 
             // 검증: 메서드 호출 확인
             verify(userRepository).findById(adminUserId);
@@ -319,6 +321,47 @@ class DashboardServiceTest {
             assertThat(response).isNotNull();
             assertThat(response.getTodayBlogItemList()).hasSize(1);
             assertThat(response.getTodayBlogItemList().get(0).getPlatform()).isEqualTo("Unknown");
+            assertThat(response.getTodayBlogItemList().get(0).getPublishStatus()).isEqualTo(BlogPublishStatus.PUBLISHED);
+        }
+
+        @Test
+        @DisplayName("성공: 발행 실패한 블로그의 경우 실패 상태와 사유가 포함된다")
+        void getDashboardData_Success_FailedBlog() {
+            // given
+            Blog failedBlog = Blog.builder()
+                    .blogTemplateId(1L)
+                    .title("실패한 블로그")
+                    .content("내용")
+                    .category("패션")
+                    .userId(1L)
+                    .publishStatus(BlogPublishStatus.FAILED)
+                    .failureReason("카테고리가 null")
+                    .build();
+            ReflectionTestUtils.setField(failedBlog, "id", 6L);
+
+            List<Blog> todayBlogs = List.of(failedBlog);
+            List<BlogTemplate> allTemplates = List.of(template1);
+
+            given(userRepository.findById(adminUserId)).willReturn(Optional.of(adminUser));
+            given(blogRepository.countByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
+                    .willReturn(1);
+            given(blogRepository.count()).willReturn(1L);
+            given(userRepository.countByRole(USER)).willReturn(1);
+            given(blogRepository.findAll()).willReturn(new ArrayList<>());
+            given(blogTemplateRepository.findAll()).willReturn(allTemplates);
+            given(blogRepository.findAllByCreatedAtBetween(any(LocalDateTime.class), any(LocalDateTime.class)))
+                    .willReturn(todayBlogs);
+            given(userRepository.findAll()).willReturn(new ArrayList<>());
+
+            // when
+            DashboardResponse response = dashboardService.getDashboardData(adminUserId);
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.getTodayBlogItemList()).hasSize(1);
+            assertThat(response.getTodayBlogItemList().get(0).getTitle()).isEqualTo("실패한 블로그");
+            assertThat(response.getTodayBlogItemList().get(0).getPublishStatus()).isEqualTo(BlogPublishStatus.FAILED);
+            assertThat(response.getTodayBlogItemList().get(0).getFailureReason()).isEqualTo("카테고리가 null");
         }
     }
 }
