@@ -11,10 +11,12 @@ import io.github.cryschan.berepository.domain.blog.exception.BlogException;
 import io.github.cryschan.berepository.domain.blog.repository.BlogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -22,10 +24,15 @@ import java.util.List;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class BlogService {
 
     private final BlogRepository blogRepository;
+    private final BlogService self;  // 자기 자신 주입 (프록시를 통한 트랜잭션 분리)
+
+    public BlogService(BlogRepository blogRepository, @Lazy BlogService self) {
+        this.blogRepository = blogRepository;
+        this.self = self;
+    }
 
     private static final int DEFAULT_PAGE_SIZE = 4;
 
@@ -142,7 +149,13 @@ public class BlogService {
                 String category = summary.product().category();
 
                 if (category == null) {
-                    log.warn("카테고리가 null, 건너뜀 - 상품명: {}", summary.product().productName());
+                    String errorMsg = "카테고리가 null";
+                    log.warn("{} - 상품명: {}", errorMsg, summary.product().productName());
+
+                    // 실패한 블로그를 별도 트랜잭션으로 저장
+                    if (self != null) {
+                        self.saveFailedBlog(templateId, title, userId, errorMsg);
+                    }
                     failCount++;
                     continue;
                 }
@@ -156,8 +169,15 @@ public class BlogService {
                 log.debug("블로그 저장 성공 - id: {}, 제목: {}", saved.getId(), title);
             } catch (Exception e) {
                 failCount++;
+                String errorMsg = e.getMessage();
                 log.error("블로그 저장 실패 - 상품명: {}, 에러: {}",
-                        summary.product().productName(), e.getMessage(), e);
+                        summary.product().productName(), errorMsg, e);
+
+                // 실패한 블로그를 별도 트랜잭션으로 저장
+                if (self != null) {
+                    String title = generateBlogTitle(templateTitle, summary);
+                    self.saveFailedBlog(templateId, title, userId, errorMsg != null ? errorMsg : "알 수 없는 오류");
+                }
             }
         }
 
@@ -210,6 +230,28 @@ public class BlogService {
         }
 
         return content.toString();
+    }
+
+    /**
+     * 실패한 블로그를 별도 트랜잭션으로 저장
+     * 메인 트랜잭션 롤백과 무관하게 독립적으로 저장됨
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void saveFailedBlog(Long templateId, String title, Long userId, String errorMsg) {
+        try {
+            Blog failedBlog = Blog.createFailed(
+                    templateId,
+                    title,
+                    "",  // content는 빈 문자열
+                    "UNKNOWN",  // 카테고리 기본값
+                    userId,
+                    errorMsg
+            );
+            blogRepository.save(failedBlog);
+            log.debug("실패한 블로그 저장 완료 - 제목: {}, 사유: {}", title, errorMsg);
+        } catch (Exception e) {
+            log.error("실패한 블로그 저장 중 오류 발생: {}", e.getMessage(), e);
+        }
     }
 
     @Transactional
