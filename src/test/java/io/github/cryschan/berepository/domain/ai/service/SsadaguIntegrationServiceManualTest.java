@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 실제 네트워크 요청을 수행
  */
 @SpringBootTest
+@Disabled("실제 네트워크 크롤링 테스트 - 수동 실행 전용")
 class SsadaguIntegrationServiceManualTest {
 
     @Autowired
