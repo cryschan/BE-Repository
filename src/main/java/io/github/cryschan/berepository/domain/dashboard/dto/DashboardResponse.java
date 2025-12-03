@@ -21,4 +21,6 @@ public class DashboardResponse {
 
     private Long totalTokenUsage;  // 사용한 토큰 수
 
+    private DashboardComparison comparison;  // 어제 대비 증감률
+
 }
