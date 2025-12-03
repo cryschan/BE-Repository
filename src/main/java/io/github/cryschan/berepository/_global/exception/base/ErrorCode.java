@@ -28,6 +28,11 @@ public enum ErrorCode {
     FAQ_NOT_FOUND("F001", "FAQ를 찾을 수 없습니다", HttpStatus.NOT_FOUND),
     FAQ_ACCESS_DENIED("F002", "FAQ에 대한 권한이 없습니다", HttpStatus.FORBIDDEN),
 
+    // ==================== Notice 도메인 (N으로 시작) ====================
+    NOTICE_NOT_FOUND("N001", "공지사항을 찾을 수 없습니다", HttpStatus.NOT_FOUND),
+    NOTICE_ACCESS_DENIED("N002", "공지사항에 대한 권한이 없습니다", HttpStatus.FORBIDDEN),
+    NOTICE_INVALID_PAGE("N003", "존재하지 않는 페이지입니다", HttpStatus.BAD_REQUEST),
+
     // ==================== BlogTemplate 도메인 (BT로 시작) ====================
     BLOG_TEMPLATE_NOT_FOUND("BT001", "블로그 템플릿을 찾을 수 없습니다", HttpStatus.NOT_FOUND),
     BLOG_TEMPLATE_ACCESS_DENIED("BT002", "블로그 템플릿에 대한 권한이 없습니다", HttpStatus.FORBIDDEN),
