@@ -139,10 +139,12 @@ public class DashboardService {
                         .add(blogId);
             }
 
-            // 템플릿의 각 플랫폼에 대해 해당 블로그 ID를 추가
-            for (String platform : template.getPlatforms()) {
-                platformToBlogIds.computeIfAbsent(platform, k -> new java.util.HashSet<>())
-                        .add(blogId);
+            // 템플릿이 있을 때만 플랫폼 분포 계산
+            if (template != null && template.getPlatforms() != null) {
+                for (String platform : template.getPlatforms()) {
+                    platformToBlogIds.computeIfAbsent(platform, k -> new java.util.HashSet<>())
+                            .add(blogId);
+                }
             }
         }
 
@@ -167,12 +169,12 @@ public class DashboardService {
                 .map(blog -> {
                     String platform = "Unknown";
                     BlogTemplate template = getTemplateFromBlog(blog, templateMap);
-                    if (!template.getPlatforms().isEmpty()) {
+                    if (template != null && template.getPlatforms() != null && !template.getPlatforms().isEmpty()) {
                         platform = template.getPlatforms().get(0);
                     }
 
-                    // 템플릿 생성자의 username 조회
-                    String username = userMap.getOrDefault(template.getUserId(), "Unknown");
+                    // 블로그 작성자의 username 조회
+                    String username = userMap.getOrDefault(blog.getUserId(), "Unknown");
                     return new TodayBlogItem(
                             blog.getTitle(),
                             platform,
@@ -207,21 +209,17 @@ public class DashboardService {
                 ));
     }
     
-    /* Blog에서 템플릿 조회 (공통 로직) */
+    /* Blog에서 템플릿 조회 (공통 로직) - 템플릿이 없으면 null 반환 */
     private BlogTemplate getTemplateFromBlog(Blog blog, Map<Long, BlogTemplate> templateMap) {
         Long templateId = blog.getBlogTemplateId();
         if (templateId == null) {
-            log.error("blogTemplateId is null for blog id: {}. This indicates a data integrity issue.", blog.getId());
-            throw new IllegalStateException(
-                    String.format("블로그의 템플릿 ID가 null입니다. Blog ID: %d", blog.getId())
-            );
+            log.warn("blogTemplateId is null for blog id: {}. Skipping template lookup.", blog.getId());
+            return null;
         }
         BlogTemplate template = templateMap.get(templateId);
         if (template == null) {
-            log.error("BlogTemplate not found for templateId: {} (blog id: {}). This indicates a data integrity issue.", templateId, blog.getId());
-            throw new IllegalStateException(
-                    String.format("블로그 템플릿을 찾을 수 없습니다. Template ID: %d (Blog ID: %d)", templateId, blog.getId())
-            );
+            log.warn("BlogTemplate not found for templateId: {} (blog id: {}). Using default values.", templateId, blog.getId());
+            return null;
         }
         return template;
     }
