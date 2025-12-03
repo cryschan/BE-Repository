@@ -3,6 +3,7 @@ package io.github.cryschan.berepository.domain.notice.service;
 import io.github.cryschan.berepository.domain.notice.dto.*;
 import io.github.cryschan.berepository.domain.notice.entity.Notice;
 import io.github.cryschan.berepository.domain.notice.exception.NoticeAccessDeniedException;
+import io.github.cryschan.berepository.domain.notice.exception.NoticeInvalidPageException;
 import io.github.cryschan.berepository.domain.notice.exception.NoticeNotFoundException;
 import io.github.cryschan.berepository.domain.notice.repository.NoticeRepository;
 import io.github.cryschan.berepository.domain.user.entity.role.UserRole;
@@ -32,10 +33,18 @@ public class NoticeService {
      * @param size 페이지 크기 (1~100)
      * @return 공지사항 목록 (중요 공지 우선, 최신순 정렬)
      */
+    /**
+     * 공지사항 목록 조회
+     *
+     * @param page 페이지 번호 (1부터 시작)
+     * @param size 페이지 크기 (1~100)
+     * @return 공지사항 목록 (중요 공지 우선, 최신순 정렬)
+     * @throws NoticeInvalidPageException 존재하지 않는 페이지를 요청한 경우
+     */
     public Page<NoticeListItemDto> getNoticeList(int page, int size) {
         // 페이지 번호 검증
         if (page < 1) {
-            throw new IllegalArgumentException("페이지 번호는 1 이상이어야 합니다.");
+            throw new NoticeInvalidPageException("페이지 번호는 1 이상이어야 합니다.");
         }
 
         // 페이지 크기 제한 (Controller에서도 검증하지만, Service에서도 안전장치)
@@ -61,10 +70,13 @@ public class NoticeService {
         Page<Notice> noticePage = noticeRepository.findAll(pageable);
 
         // 존재하지 않는 페이지 요청 체크
-        if (page > 1 && noticePage.isEmpty()) {
-            throw new IllegalArgumentException(
-                    String.format("페이지 %d는 존재하지 않습니다. 전체 페이지 수: %d", page, noticePage.getTotalPages())
-            );
+        int totalPages = noticePage.getTotalPages();
+        if (totalPages > 0 && page > totalPages) {
+            throw new NoticeInvalidPageException(page, totalPages);
+        }
+        // totalPages가 0이고 page > 1인 경우도 체크
+        if (totalPages == 0 && page > 1) {
+            throw new NoticeInvalidPageException(page, 0);
         }
 
         return noticePage.map(NoticeListItemDto::from);

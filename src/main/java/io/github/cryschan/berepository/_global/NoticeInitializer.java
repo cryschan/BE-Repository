@@ -9,7 +9,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -83,6 +82,8 @@ public class NoticeInitializer implements CommandLineRunner {
                                 감사합니다.
                                 """)
                         .isImportant(true)
+                        .createdAt(now.minusDays(1))
+                        .updatedAt(now.minusDays(1))
                         .build(),
 
                 Notice.builder()
@@ -107,6 +108,8 @@ public class NoticeInitializer implements CommandLineRunner {
                                 감사합니다.
                                 """)
                         .isImportant(true)
+                        .createdAt(now.minusDays(2))
+                        .updatedAt(now.minusDays(2))
                         .build(),
 
                 // 일반 공지사항 (new로 표시될 것)
@@ -131,6 +134,8 @@ public class NoticeInitializer implements CommandLineRunner {
                                 감사합니다.
                                 """)
                         .isImportant(false)
+                        .createdAt(now)
+                        .updatedAt(now)
                         .build(),
 
                 // 오래된 공지사항들 (new로 표시되지 않을 것들)
@@ -153,6 +158,8 @@ public class NoticeInitializer implements CommandLineRunner {
                                 감사합니다.
                                 """)
                         .isImportant(false)
+                        .createdAt(now.minusDays(5))
+                        .updatedAt(now.minusDays(5))
                         .build(),
 
                 Notice.builder()
@@ -176,6 +183,8 @@ public class NoticeInitializer implements CommandLineRunner {
                                 감사합니다.
                                 """)
                         .isImportant(false)
+                        .createdAt(now.minusDays(7))
+                        .updatedAt(now.minusDays(7))
                         .build(),
 
                 Notice.builder()
@@ -200,6 +209,8 @@ public class NoticeInitializer implements CommandLineRunner {
                                 감사합니다.
                                 """)
                         .isImportant(false)
+                        .createdAt(now.minusDays(10))
+                        .updatedAt(now.minusDays(10))
                         .build(),
 
                 Notice.builder()
@@ -222,6 +233,8 @@ public class NoticeInitializer implements CommandLineRunner {
                                 감사합니다.
                                 """)
                         .isImportant(false)
+                        .createdAt(now.minusDays(15))
+                        .updatedAt(now.minusDays(15))
                         .build(),
 
                 Notice.builder()
@@ -247,51 +260,10 @@ public class NoticeInitializer implements CommandLineRunner {
                                 감사합니다.
                                 """)
                         .isImportant(false)
+                        .createdAt(now.minusDays(20))
+                        .updatedAt(now.minusDays(20))
                         .build()
         );
-
-        // createdAt 날짜 설정 (일부는 new로 표시되도록, 일부는 오래된 것으로)
-        try {
-            Field createdAtField = Notice.class.getDeclaredField("createdAt");
-            Field updatedAtField = Notice.class.getDeclaredField("updatedAt");
-            createdAtField.setAccessible(true);
-            updatedAtField.setAccessible(true);
-            
-            // 0번: 1일 전 (new)
-            createdAtField.set(initialNotices.get(0), now.minusDays(1));
-            updatedAtField.set(initialNotices.get(0), now.minusDays(1));
-            
-            // 1번: 2일 전 (new)
-            createdAtField.set(initialNotices.get(1), now.minusDays(2));
-            updatedAtField.set(initialNotices.get(1), now.minusDays(2));
-            
-            // 2번: 오늘 (new)
-            createdAtField.set(initialNotices.get(2), now);
-            updatedAtField.set(initialNotices.get(2), now);
-            
-            // 3번: 5일 전 (old)
-            createdAtField.set(initialNotices.get(3), now.minusDays(5));
-            updatedAtField.set(initialNotices.get(3), now.minusDays(5));
-            
-            // 4번: 7일 전 (old)
-            createdAtField.set(initialNotices.get(4), now.minusDays(7));
-            updatedAtField.set(initialNotices.get(4), now.minusDays(7));
-            
-            // 5번: 10일 전 (old)
-            createdAtField.set(initialNotices.get(5), now.minusDays(10));
-            updatedAtField.set(initialNotices.get(5), now.minusDays(10));
-            
-            // 6번: 15일 전 (old)
-            createdAtField.set(initialNotices.get(6), now.minusDays(15));
-            updatedAtField.set(initialNotices.get(6), now.minusDays(15));
-            
-            // 7번: 20일 전 (old)
-            createdAtField.set(initialNotices.get(7), now.minusDays(20));
-            updatedAtField.set(initialNotices.get(7), now.minusDays(20));
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            log.error("Failed to set createdAt/updatedAt fields", e);
-            throw new RuntimeException("Failed to initialize notice dates", e);
-        }
 
         // 데이터 저장
         List<Notice> savedNotices = noticeRepository.saveAll(initialNotices);
