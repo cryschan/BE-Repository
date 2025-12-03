@@ -170,11 +170,6 @@ public class AdminInquiryService {
         return inquiryService.getInquiryDetail(inquiry.getUserId(), inquiryId);
     }
 
-    /**
-     * ==================================================================
-     * Helper 메서드
-     * ==================================================================
-     */
 
     /**
      * 관리자 권한 검증
