@@ -63,6 +63,9 @@ public class SecurityConfig {
                         .requestMatchers(SWAGGER_WHITELIST).permitAll()
                         // 공개 API 접근 허용
                         .requestMatchers(PUBLIC_WHITELIST).permitAll()
+                        // 공지사항 조회 (GET만) 공개
+                        .requestMatchers("GET", "/api/notices").permitAll()
+                        .requestMatchers("GET", "/api/notices/**").permitAll()
                         // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 );
