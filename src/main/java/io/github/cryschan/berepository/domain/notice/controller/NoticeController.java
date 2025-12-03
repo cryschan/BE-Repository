@@ -71,4 +71,16 @@ public class NoticeController {
         return ResponseEntity.ok(response);
     }
 
+    // admin - 공지 삭제 API
+    @Operation(summary = "공지사항 삭제", description = "공지사항을 삭제합니다 (관리자 전용)")
+    @Transactional
+    @DeleteMapping("/{id}")
+    public ResponseEntity<NoticeDeleteResponse> deleteNotice(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Long userId
+    ) {
+        NoticeDeleteResponse response = noticeService.deleteNotice(id, userId);
+        return ResponseEntity.ok(response);
+    }
+
 }

@@ -125,6 +125,17 @@ public class NoticeService {
         return savedNotice.getId();
     }
 
+    /**
+     * 공지사항 수정
+     *
+     * @param id      공지사항 ID
+     * @param request 공지사항 수정 요청 (title, content, isImportant)
+     * @param userId  인증된 사용자 ID (필수)
+     * @return 공지사항 수정 응답
+     * @throws NoticeAccessDeniedException 관리자 권한이 없는 경우
+     * @throws NoticeNotFoundException     공지사항을 찾을 수 없는 경우
+     */
+    @Transactional
     public NoticeUpdateResponse updateNotice(Long id, NoticeUpdateRequest request, Long userId) {
         // 1. 인증 체크
         if (userId == null) {
@@ -144,7 +155,7 @@ public class NoticeService {
         Notice notice = noticeRepository.findById(id)
                 .orElseThrow(() -> new NoticeNotFoundException(id));
 
-        // 4. 수정
+        // 4. 수정 (title, content, isImportant)
         notice.updateContent(request.title(), request.content());
 
         if (request.isImportant()) {
@@ -154,6 +165,41 @@ public class NoticeService {
         }
 
         return new NoticeUpdateResponse(notice.getId(), "공지사항 수정 완료");
+    }
+
+    /**
+     * 공지사항 삭제
+     *
+     * @param id     공지사항 ID
+     * @param userId 인증된 사용자 ID (필수)
+     * @return 공지사항 삭제 응답
+     * @throws NoticeAccessDeniedException 관리자 권한이 없는 경우
+     * @throws NoticeNotFoundException     공지사항을 찾을 수 없는 경우
+     */
+    @Transactional
+    public NoticeDeleteResponse deleteNotice(Long id, Long userId) {
+        // 1. 인증 체크
+        if (userId == null) {
+            throw new NoticeAccessDeniedException("인증이 필요합니다.");
+        }
+
+        // 2. 관리자 권한 체크
+        boolean isAdmin = userRepository.findRoleById(userId)
+                .map(role -> role == UserRole.ADMIN)
+                .orElse(false);
+
+        if (!isAdmin) {
+            throw new NoticeAccessDeniedException("공지사항 삭제는 관리자만 가능합니다.");
+        }
+
+        // 3. 기존 공지 조회 및 삭제 확인
+        Notice notice = noticeRepository.findById(id)
+                .orElseThrow(() -> new NoticeNotFoundException(id));
+
+        // 4. 삭제
+        noticeRepository.delete(notice);
+
+        return new NoticeDeleteResponse(notice.getId(), "공지사항 삭제 완료");
     }
 
 }
