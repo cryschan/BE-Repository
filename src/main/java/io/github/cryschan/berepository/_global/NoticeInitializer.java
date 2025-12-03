@@ -9,6 +9,8 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.Field;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -55,9 +57,11 @@ public class NoticeInitializer implements CommandLineRunner {
 
         log.debug("Notice data does not exist. Creating initial notice data...");
 
-        // 초기 공지사항 데이터 정의
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 초기 공지사항 데이터 정의 (일부는 new로 표시되도록, 일부는 오래된 것으로)
         List<Notice> initialNotices = Arrays.asList(
-                // 중요 공지사항
+                // 중요 공지사항 (new로 표시될 것들)
                 Notice.builder()
                         .title("🚨 중요 공지: 시스템 점검 안내")
                         .content("""
@@ -105,7 +109,7 @@ public class NoticeInitializer implements CommandLineRunner {
                         .isImportant(true)
                         .build(),
 
-                // 일반 공지사항
+                // 일반 공지사항 (new로 표시될 것)
                 Notice.builder()
                         .title("📢 이용약관 개정 안내")
                         .content("""
@@ -129,6 +133,7 @@ public class NoticeInitializer implements CommandLineRunner {
                         .isImportant(false)
                         .build(),
 
+                // 오래된 공지사항들 (new로 표시되지 않을 것들)
                 Notice.builder()
                         .title("🎉 연말 이벤트 안내")
                         .content("""
@@ -244,6 +249,49 @@ public class NoticeInitializer implements CommandLineRunner {
                         .isImportant(false)
                         .build()
         );
+
+        // createdAt 날짜 설정 (일부는 new로 표시되도록, 일부는 오래된 것으로)
+        try {
+            Field createdAtField = Notice.class.getDeclaredField("createdAt");
+            Field updatedAtField = Notice.class.getDeclaredField("updatedAt");
+            createdAtField.setAccessible(true);
+            updatedAtField.setAccessible(true);
+            
+            // 0번: 1일 전 (new)
+            createdAtField.set(initialNotices.get(0), now.minusDays(1));
+            updatedAtField.set(initialNotices.get(0), now.minusDays(1));
+            
+            // 1번: 2일 전 (new)
+            createdAtField.set(initialNotices.get(1), now.minusDays(2));
+            updatedAtField.set(initialNotices.get(1), now.minusDays(2));
+            
+            // 2번: 오늘 (new)
+            createdAtField.set(initialNotices.get(2), now);
+            updatedAtField.set(initialNotices.get(2), now);
+            
+            // 3번: 5일 전 (old)
+            createdAtField.set(initialNotices.get(3), now.minusDays(5));
+            updatedAtField.set(initialNotices.get(3), now.minusDays(5));
+            
+            // 4번: 7일 전 (old)
+            createdAtField.set(initialNotices.get(4), now.minusDays(7));
+            updatedAtField.set(initialNotices.get(4), now.minusDays(7));
+            
+            // 5번: 10일 전 (old)
+            createdAtField.set(initialNotices.get(5), now.minusDays(10));
+            updatedAtField.set(initialNotices.get(5), now.minusDays(10));
+            
+            // 6번: 15일 전 (old)
+            createdAtField.set(initialNotices.get(6), now.minusDays(15));
+            updatedAtField.set(initialNotices.get(6), now.minusDays(15));
+            
+            // 7번: 20일 전 (old)
+            createdAtField.set(initialNotices.get(7), now.minusDays(20));
+            updatedAtField.set(initialNotices.get(7), now.minusDays(20));
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            log.error("Failed to set createdAt/updatedAt fields", e);
+            throw new RuntimeException("Failed to initialize notice dates", e);
+        }
 
         // 데이터 저장
         List<Notice> savedNotices = noticeRepository.saveAll(initialNotices);
