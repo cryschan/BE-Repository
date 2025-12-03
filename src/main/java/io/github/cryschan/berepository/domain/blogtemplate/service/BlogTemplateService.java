@@ -112,7 +112,7 @@ public class BlogTemplateService {
     }
 
     public List<BlogTemplate> getTemplatesForTime(LocalTime postTime) {
-        return blogTemplateRepository.findByDailyPostTime(postTime);
+        return blogTemplateRepository.findByDailyPostTimeWithCollections(postTime);
     }
 
     public List<BlogTemplateResponse> searchTemplateResponses(Collection<String> categories, Collection<String> platforms) {

@@ -98,7 +98,7 @@ public class AiController {
             @Parameter(description = "AI 홍보 최대 글자수", example = "1500")
             @RequestParam(defaultValue = "200") int charLimit
     ) {
-        String summary = ssadaguSummaryService.summary(product, charLimit);
-        return SsadaguSummaryResponse.from(product, summary);
+        SsadaguSummaryService.TitleAndSummary result = ssadaguSummaryService.summaryWithTitle(product, charLimit);
+        return SsadaguSummaryResponse.from(product, result.title(), result.summary());
     }
 }

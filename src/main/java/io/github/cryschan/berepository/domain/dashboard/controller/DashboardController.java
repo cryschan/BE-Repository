@@ -20,7 +20,7 @@ import java.security.Principal;
 
 @Tag(name = "대시보드", description = "대시보드 API")
 @RestController
-@RequestMapping("/api/dashboard")
+@RequestMapping("/api/admin/dashboard")
 @RequiredArgsConstructor
 public class DashboardController {
 

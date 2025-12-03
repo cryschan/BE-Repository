@@ -6,10 +6,12 @@ import io.github.cryschan.berepository.domain.blog.entity.Blog;
 import io.github.cryschan.berepository.domain.blog.repository.BlogRepository;
 import io.github.cryschan.berepository.domain.blogtemplate.entity.BlogTemplate;
 import io.github.cryschan.berepository.domain.blogtemplate.repository.BlogTemplateRepository;
+import io.github.cryschan.berepository.domain.dashboard.dto.DashboardComparison;
 import io.github.cryschan.berepository.domain.dashboard.dto.DashboardResponse;
 import io.github.cryschan.berepository.domain.dashboard.dto.TodayBlogItem;
 import io.github.cryschan.berepository.domain.dashboard.entity.Dashboard;
 import io.github.cryschan.berepository.domain.dashboard.repository.DashboardRepository;
+import io.github.cryschan.berepository.domain.user.entity.User;
 import io.github.cryschan.berepository.domain.user.entity.role.UserRole;
 import io.github.cryschan.berepository.domain.user.exception.UserException;
 import io.github.cryschan.berepository.domain.user.repository.UserRepository;
@@ -49,6 +51,9 @@ public class DashboardService {
         LocalDateTime today = LocalDateTime.now().toLocalDate().atStartOfDay();
         DashboardData data = calculateDashboardData(today);
 
+        // 어제 데이터 조회 및 증감률 계산
+        DashboardComparison comparison = calculateComparison(today, data);
+
         return new DashboardResponse(
                 data.activeUserCount(),
                 data.todayBlogCount(),
@@ -56,7 +61,8 @@ public class DashboardService {
                 data.categoryDistribution(),
                 data.platformUsage(),
                 data.todayBlogItemList(),
-                data.totalTokenUsage()
+                data.totalTokenUsage(),
+                comparison
         );
     }
 
@@ -69,10 +75,13 @@ public class DashboardService {
     private DashboardData calculateDashboardData(LocalDateTime date) {
         // 해당 날짜의 시작과 끝 시간 계산
         LocalDateTime startOfDay = date.toLocalDate().atStartOfDay();
-        LocalDateTime endOfDay = date.toLocalDate().atTime(23, 59, 59, 999999999);
+        // 다음 날 00:00:00 이전까지 포함 (더 정확한 범위 계산)
+        LocalDateTime endOfDay = date.toLocalDate().plusDays(1).atStartOfDay().minusNanos(1);
 
         // 템플릿을 한 번만 조회하여 재사용 (중복 호출 방지)
         Map<Long, BlogTemplate> templateMap = getTemplateMap();
+        // 사용자 정보를 한 번만 조회하여 재사용 (중복 호출 방지)
+        Map<Long, String> userMap = getUserMap();
 
         // 1) 해당 날짜에 작성된 글 수
         Integer todayBlogCount = blogRepository.countByCreatedAtBetween(startOfDay, endOfDay);
@@ -89,7 +98,7 @@ public class DashboardService {
         calculateDistributionAndUsage(categoryDistribution, platformUsage, templateMap);
 
         // 5) 해당 날짜에 작성된 글 리스트
-        List<TodayBlogItem> todayBlogItemList = getTodayBlogList(startOfDay, endOfDay, templateMap);
+        List<TodayBlogItem> todayBlogItemList = getTodayBlogList(startOfDay, endOfDay, templateMap, userMap);
 
         // 6) 사용한 토큰 수 (전체 사용자의 토큰 사용량 합계)
         Long totalTokenUsage = getTotalTokenUsage();
@@ -123,16 +132,19 @@ public class DashboardService {
             BlogTemplate template = getTemplateFromBlog(blog, templateMap);
             Long blogId = blog.getId();
 
-            // 템플릿의 각 카테고리에 대해 해당 블로그 ID를 추가
-            for (String category : template.getCategories()) {
+            // Blog의 category를 직접 사용하여 카테고리 분포 계산
+            String category = blog.getCategory();
+            if (category != null && !category.isEmpty()) {
                 categoryToBlogIds.computeIfAbsent(category, k -> new java.util.HashSet<>())
                         .add(blogId);
             }
 
-            // 템플릿의 각 플랫폼에 대해 해당 블로그 ID를 추가
-            for (String platform : template.getPlatforms()) {
-                platformToBlogIds.computeIfAbsent(platform, k -> new java.util.HashSet<>())
-                        .add(blogId);
+            // 템플릿이 있을 때만 플랫폼 분포 계산
+            if (template != null && template.getPlatforms() != null) {
+                for (String platform : template.getPlatforms()) {
+                    platformToBlogIds.computeIfAbsent(platform, k -> new java.util.HashSet<>())
+                            .add(blogId);
+                }
             }
         }
 
@@ -148,7 +160,8 @@ public class DashboardService {
     private List<TodayBlogItem> getTodayBlogList(
             LocalDateTime start,
             LocalDateTime end,
-            Map<Long, BlogTemplate> templateMap
+            Map<Long, BlogTemplate> templateMap,
+            Map<Long, String> userMap
     ) {
         List<Blog> blogs = blogRepository.findAllByCreatedAtBetween(start, end);
 
@@ -156,13 +169,20 @@ public class DashboardService {
                 .map(blog -> {
                     String platform = "Unknown";
                     BlogTemplate template = getTemplateFromBlog(blog, templateMap);
-                    if (!template.getPlatforms().isEmpty()) {
+                    if (template != null && template.getPlatforms() != null && !template.getPlatforms().isEmpty()) {
                         platform = template.getPlatforms().get(0);
                     }
+
+                    // 블로그 작성자의 username 조회
+                    String username = userMap.getOrDefault(blog.getUserId(), "Unknown");
                     return new TodayBlogItem(
                             blog.getTitle(),
                             platform,
-                            blog.getCreatedAt()
+                            blog.getCreatedAt(),
+                            username,
+                            blog.getCategory(),
+                            blog.getPublishStatus(),
+                            blog.getFailureReason()
                     );
                 })
                 .collect(Collectors.toList());
@@ -178,21 +198,28 @@ public class DashboardService {
                 ));
     }
 
-    /* Blog에서 템플릿 조회 (공통 로직) */
+
+    /* 사용자 정보를 Map으로 조회하여 캐싱 */
+    private Map<Long, String> getUserMap() {
+        return userRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        User::getUserId,
+                        user -> user.getUsername() != null ? user.getUsername() : "Unknown",
+                        (existing, replacement) -> existing  // 중복 키 발생 시 기존 값 유지
+                ));
+    }
+    
+    /* Blog에서 템플릿 조회 (공통 로직) - 템플릿이 없으면 null 반환 */
     private BlogTemplate getTemplateFromBlog(Blog blog, Map<Long, BlogTemplate> templateMap) {
         Long templateId = blog.getBlogTemplateId();
         if (templateId == null) {
-            log.error("blogTemplateId is null for blog id: {}. This indicates a data integrity issue.", blog.getId());
-            throw new IllegalStateException(
-                    String.format("블로그의 템플릿 ID가 null입니다. Blog ID: %d", blog.getId())
-            );
+            log.warn("blogTemplateId is null for blog id: {}. Skipping template lookup.", blog.getId());
+            return null;
         }
         BlogTemplate template = templateMap.get(templateId);
         if (template == null) {
-            log.error("BlogTemplate not found for templateId: {} (blog id: {}). This indicates a data integrity issue.", templateId, blog.getId());
-            throw new IllegalStateException(
-                    String.format("블로그 템플릿을 찾을 수 없습니다. Template ID: %d (Blog ID: %d)", templateId, blog.getId())
-            );
+            log.warn("BlogTemplate not found for templateId: {} (blog id: {}). Using default values.", templateId, blog.getId());
+            return null;
         }
         return template;
     }
@@ -240,7 +267,8 @@ public class DashboardService {
                         data.totalBlogCount(),
                         categoryDistributionJson,
                         platformUsageJson,
-                        todayBlogListJson
+                        todayBlogListJson,
+                        data.totalTokenUsage()
                 );
                 log.info("Updating existing dashboard data for date: {}", startOfDay);
             } else {
@@ -254,6 +282,7 @@ public class DashboardService {
                         .categoryDistribution(categoryDistributionJson)
                         .platformUsage(platformUsageJson)
                         .todayBlogList(todayBlogListJson)
+                        .totalTokenUsage(data.totalTokenUsage())
                         .build();
                 log.info("Creating new dashboard data for date: {}", startOfDay);
             }
@@ -286,6 +315,135 @@ public class DashboardService {
             log.error("Failed to serialize object to JSON: {}", object, e);
             throw new RuntimeException("대시보드 데이터 직렬화에 실패했습니다.", e);
         }
+    }
+
+    /**
+     * 어제 대비 증감률 계산
+     *
+     * @param today 오늘 날짜
+     * @param todayData 오늘 대시보드 데이터
+     * @return 증감률 정보
+     */
+    private DashboardComparison calculateComparison(LocalDateTime today, DashboardData todayData) {
+        // 어제 날짜 계산
+        LocalDateTime yesterday = today.minusDays(1);
+        
+        // 어제 대시보드 데이터 조회
+        Optional<Dashboard> yesterdayDashboard = dashboardRepository.findByDate(yesterday);
+        
+        if (yesterdayDashboard.isEmpty()) {
+            // 어제 데이터가 없으면 모든 증감률과 변화량을 null로 반환
+            return new DashboardComparison(null, null, null, null, null, null);
+        }
+        
+        Dashboard yesterdayData = yesterdayDashboard.get();
+        
+        // 변화량 계산: 오늘 값 - 어제 값
+        Integer todayBlogCountChange = calculateChange(
+                todayData.todayBlogCount(),
+                yesterdayData.getTodayBlogCount()
+        );
+        
+        Integer activeUserCountChange = calculateChange(
+                todayData.activeUserCount(),
+                yesterdayData.getActiveUserCount()
+        );
+        
+        Long totalTokenUsageChange = calculateChange(
+                todayData.totalTokenUsage(),
+                yesterdayData.getTotalTokenUsage()
+        );
+        
+        // 증감률 계산: ((오늘 - 어제) / 어제) * 100 (소수점 둘째 자리 반올림)
+        Double todayBlogCountChangeRate = calculateChangeRate(
+                todayData.todayBlogCount(),
+                yesterdayData.getTodayBlogCount()
+        );
+        
+        Double activeUserCountChangeRate = calculateChangeRate(
+                todayData.activeUserCount(),
+                yesterdayData.getActiveUserCount()
+        );
+        
+        Double totalTokenUsageChangeRate = calculateChangeRate(
+                todayData.totalTokenUsage(),
+                yesterdayData.getTotalTokenUsage()
+        );
+        
+        return new DashboardComparison(
+                todayBlogCountChangeRate,
+                todayBlogCountChange,
+                activeUserCountChangeRate,
+                activeUserCountChange,
+                totalTokenUsageChangeRate,
+                totalTokenUsageChange
+        );
+    }
+
+    /**
+     * 변화량 계산
+     *
+     * @param todayValue 오늘 값
+     * @param yesterdayValue 어제 값
+     * @return 변화량 (오늘 - 어제), null인 경우 어제 값이 null
+     */
+    private Integer calculateChange(Integer todayValue, Integer yesterdayValue) {
+        if (yesterdayValue == null) {
+            return null;
+        }
+        int today = todayValue != null ? todayValue : 0;
+        return today - yesterdayValue;
+    }
+
+    /**
+     * 변화량 계산 (Long 타입용)
+     *
+     * @param todayValue 오늘 값
+     * @param yesterdayValue 어제 값
+     * @return 변화량 (오늘 - 어제), null인 경우 어제 값이 null
+     */
+    private Long calculateChange(Long todayValue, Long yesterdayValue) {
+        if (yesterdayValue == null) {
+            return null;
+        }
+        long today = todayValue != null ? todayValue : 0L;
+        return today - yesterdayValue;
+    }
+
+    /**
+     * 증감률 계산 (소수점 첫째 자리 반올림)
+     *
+     * @param todayValue 오늘 값
+     * @param yesterdayValue 어제 값
+     * @return 증감률 (%), null인 경우 어제 값이 0이거나 없음
+     */
+    private Double calculateChangeRate(Integer todayValue, Integer yesterdayValue) {
+        if (yesterdayValue == null || yesterdayValue == 0) {
+            return null;
+        }
+        // todayValue가 null이면 0으로 처리
+        int today = todayValue != null ? todayValue : 0;
+        double rate = ((double) (today - yesterdayValue) / yesterdayValue) * 100;
+        // 소수점 둘째 자리에서 반올림
+        return Math.round(rate * 10.0) / 10.0;
+    }
+
+    /**
+     * 증감률 계산 (Long 타입용, 소수점 둘째 자리 반올림)
+     *
+     * @param todayValue 오늘 값
+     * @param yesterdayValue 어제 값
+     * @return 증감률 (%), null인 경우 어제 값이 0이거나 없음
+     */
+    private Double calculateChangeRate(Long todayValue, Long yesterdayValue) {
+        if (yesterdayValue == null || yesterdayValue == 0) {
+            return null;
+        }
+        // todayValue가 null이면 0으로 처리
+        long today = todayValue != null ? todayValue : 0L;
+        double rate = ((double) (today - yesterdayValue) / yesterdayValue) * 100;
+        // 소수점 둘째 자리에서 반올림
+        return Math.round(rate * 100.0) / 100.0;
     }
 
     /**

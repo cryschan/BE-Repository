@@ -25,7 +25,7 @@ public class Blog {
     @Column(name = "blog_template_id", nullable = false)
     private Long blogTemplateId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 200)
     private String title;
 
     @Column(nullable = false, columnDefinition = "TEXT")
@@ -45,14 +45,72 @@ public class Blog {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "publish_status", nullable = false)
+    private BlogPublishStatus publishStatus;
+
+    @Column(name = "failure_reason")
+    private String failureReason;
+
     @Builder
-    public Blog(Long blogTemplateId, String title,
-                String content, String category, Long userId) {
+        private Blog(Long blogTemplateId, String title,
+                 String content, String category, Long userId,
+                 BlogPublishStatus publishStatus, String failureReason) {
         this.blogTemplateId = blogTemplateId;
         this.title = title;
         this.content = content;
         this.category = category;
         this.userId = userId;
+        this.publishStatus = publishStatus != null ? publishStatus : BlogPublishStatus.PUBLISHED;
+        this.failureReason = failureReason;
+    }
+
+    /**
+     * 스케줄러에서 블로그 생성 시 사용하는 정적 팩토리 메서드
+     */
+    public static Blog create(Long blogTemplateId, String title,
+                              String content, String category, Long userId) {
+        return Blog.builder()
+                .blogTemplateId(blogTemplateId)
+                .title(title)
+                .content(content)
+                .category(category)
+                .userId(userId)
+                .publishStatus(BlogPublishStatus.PUBLISHED)
+                .build();
+    }
+
+    /**
+     * 블로그 생성 실패 시 사용하는 정적 팩토리 메서드
+     */
+    public static Blog createFailed(Long blogTemplateId, String title,
+                                    String content, String category, Long userId,
+                                    String failureReason) {
+        return Blog.builder()
+                .blogTemplateId(blogTemplateId)
+                .title(title)
+                .content(content)
+                .category(category)
+                .userId(userId)
+                .publishStatus(BlogPublishStatus.FAILED)
+                .failureReason(failureReason)
+                .build();
+    }
+
+    /**
+     * 블로그 발행 실패로 상태 변경
+     */
+    public void markAsFailed(String reason) {
+        this.publishStatus = BlogPublishStatus.FAILED;
+        this.failureReason = reason;
+    }
+
+    /**
+     * 블로그 발행 성공으로 상태 변경
+     */
+    public void markAsPublished() {
+        this.publishStatus = BlogPublishStatus.PUBLISHED;
+        this.failureReason = null;
     }
 
     public void updateTitle(String title) {

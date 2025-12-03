@@ -70,11 +70,27 @@ public class MusinsaProductDetailCrawler {
                 return null;
             }
 
-            // 4. category.categoryDepth2Name 추출 (가장 구체적인 카테고리)
-            String category = pagePropsData.path("category").path("categoryDepth2Name").asText(null);
+            // 4. 가장 구체적인 카테고리 추출 (depth3 > depth2 > depth1 순서로 시도)
+            JsonNode categoryNode = pagePropsData.path("category");
 
+            // depth3 시도 (가장 구체적)
+            String category = categoryNode.path("categoryDepth3Name").asText(null);
             if (category != null && !category.isBlank()) {
-                log.info("Extracted category: {} from URL: {}", category, productUrl);
+                log.info("Extracted category (depth3): {} from URL: {}", category, productUrl);
+                return category;
+            }
+
+            // depth2 시도 (중분류)
+            category = categoryNode.path("categoryDepth2Name").asText(null);
+            if (category != null && !category.isBlank()) {
+                log.info("Extracted category (depth2): {} from URL: {}", category, productUrl);
+                return category;
+            }
+
+            // depth1 시도 (대분류)
+            category = categoryNode.path("categoryDepth1Name").asText(null);
+            if (category != null && !category.isBlank()) {
+                log.info("Extracted category (depth1): {} from URL: {}", category, productUrl);
                 return category;
             }
 

@@ -16,9 +16,9 @@ import java.util.stream.Collectors;
 @Component
 public class MusinsaRankingCrawler {
 
-    private static final String RANKING_API = "/api2/hm/web/v5/pans/ranking/sections/199"
+    private static final String RANKING_API_TEMPLATE = "/api2/hm/web/v5/pans/ranking/sections/199"
             + "?storeCode=musinsa&gf=A&ageBand=AGE_BAND_ALL&period=DAILY"
-            + "&eventPeriod=BASIC_REALTIME&categoryCode=000&page=1&startRank=1&offset=20";
+            + "&eventPeriod=BASIC_REALTIME&categoryCode=%s&page=1&startRank=1&offset=20";
     private static final String TARGET_SECTION_NAME = "ranking_goods_list";
 
     private final RestClient musinsaRankingRestClient;
@@ -32,9 +32,29 @@ public class MusinsaRankingCrawler {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * 무신사 랭킹에서 상위 N개 상품 URL 가져오기 (전체 카테고리)
+     *
+     * @param limit 가져올 상품 수
+     * @return 랭킹 링크 리스트
+     */
     public List<MusinsaRankingLinkDto> fetchTopLinks(int limit) {
+        return fetchTopLinksByCategory("000", limit);
+    }
+
+    /**
+     * 무신사 랭킹에서 카테고리별 상위 N개 상품 URL 가져오기
+     *
+     * @param categoryCode 무신사 카테고리 코드 (001000=상의, 002000=아우터, 003000=바지, 004000=가방, 103000=신발, 101000=패션소품, 000=전체)
+     * @param limit 가져올 상품 수
+     * @return 랭킹 링크 리스트
+     */
+    public List<MusinsaRankingLinkDto> fetchTopLinksByCategory(String categoryCode, int limit) {
+        String rankingApi = String.format(RANKING_API_TEMPLATE, categoryCode);
+        log.info("Fetching Musinsa ranking with categoryCode={}, limit={}", categoryCode, limit);
+
         String responseBody = musinsaRankingRestClient.get()
-                .uri(RANKING_API)
+                .uri(rankingApi)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .body(String.class);

@@ -1,16 +1,18 @@
 package io.github.cryschan.berepository.domain.blogtemplate.scheduler;
 
-import io.github.cryschan.berepository.domain.blogtemplate.dto.BlogContentGenerationRequest;
+import io.github.cryschan.berepository.domain.ai.dto.response.SsadaguSummaryResponse;
+import io.github.cryschan.berepository.domain.ai.service.SsadaguIntegrationService;
+import io.github.cryschan.berepository.domain.blog.dto.response.BlogSaveResult;
+import io.github.cryschan.berepository.domain.blog.service.BlogService;
 import io.github.cryschan.berepository.domain.blogtemplate.entity.BlogTemplate;
 import io.github.cryschan.berepository.domain.blogtemplate.service.BlogTemplateService;
-import io.github.cryschan.berepository.domain.fashion.dto.response.SsadaguProductDto;
-import io.github.cryschan.berepository.domain.fashion.service.FashionCrawlerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -19,17 +21,21 @@ import java.util.List;
 public class BlogTemplateScheduler {
 
     private final BlogTemplateService blogTemplateService;
-    private final FashionCrawlerService fashionCrawlerService;
+    private final SsadaguIntegrationService ssadaguIntegrationService;
+    private final BlogService blogService;
 
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "1 * * * * *")
     public void collectTemplatesForCurrentSlot() {
         LocalTime currentSlot = LocalTime.now().withSecond(0).withNano(0);
+        log.info("========== 스케줄러 실행: {} ==========", currentSlot);
+
         List<BlogTemplate> templates = blogTemplateService.getTemplatesForTime(currentSlot);
+        log.info("현재 시간 {}에 예약된 블로그 템플릿 {} 개 발견", currentSlot, templates.size());
+
         if (templates.isEmpty()) {
+            log.info("처리할 템플릿이 없습니다. 스케줄러 종료.");
             return;
         }
-
-        log.info("현재 시간 {}에 예약된 블로그 템플릿 {} 개 발견", currentSlot, templates.size());
 
         // 각 템플릿에 대해 크롤링 및 블로그 글 생성 처리
         for (BlogTemplate template : templates) {
@@ -43,9 +49,10 @@ public class BlogTemplateScheduler {
     }
 
     /**
-     * 템플릿 기반으로 크롤링 및 블로그 글 생성 처리
+     * 템플릿 기반으로 크롤링 + AI 요약 처리
+     * 스케줄러 및 수동 트리거에서 호출 가능
      */
-    private void processTemplate(BlogTemplate template) {
+    public void processTemplate(BlogTemplate template) {
         log.info("사용자 {} 템플릿 처리 시작 (제목: {})", template.getUserId(), template.getTitle());
 
         List<String> categories = template.getCategories();
@@ -54,40 +61,80 @@ public class BlogTemplateScheduler {
             return;
         }
 
-        log.info("템플릿 카테고리: {}", categories);
+        int charLimit = template.getCharLimit();
+        log.info("템플릿 카테고리: {}, 글자 제한: {}", categories, charLimit);
 
-        // 각 카테고리별로 상품 크롤링
-        List<SsadaguProductDto> crawledProducts = fashionCrawlerService.crawlProductsByCategories(categories);
+        List<SsadaguSummaryResponse> summaries = new ArrayList<>();
 
-        if (crawledProducts.isEmpty()) {
-            log.warn("템플릿 {}에 대해 크롤링된 상품이 없습니다. 블로그 생성을 건너뜁니다", template.getId());
+        log.info("========== 크롤링 + AI 요약 시작 ==========");
+        log.info("처리할 카테고리 수: {}", categories.size());
+
+        for (int i = 0; i < categories.size(); i++) {
+            String category = categories.get(i);
+            log.info("[{}/{}] 카테고리 '{}' 처리 시작", i + 1, categories.size(), category);
+
+            try {
+                log.debug("  → 무신사 랭킹 크롤링 → 싸다구 검색 시작: {}", category);
+                long startTime = System.currentTimeMillis();
+
+                SsadaguSummaryResponse response =
+                        ssadaguIntegrationService.searchAndSummarizeByCategoryName(category, charLimit);
+
+                long elapsed = System.currentTimeMillis() - startTime;
+
+                if (response != null) {
+                    summaries.add(response);
+                    log.info("[{}/{}] 카테고리 '{}' 처리 완료 ({}ms)", i + 1, categories.size(), category, elapsed);
+                    log.info("  → 상품명: {}", response.product().productName());
+                    log.info("  → 가격: {}원", response.product().price());
+                    log.info("  → 요약 길이: {}자 (제한: {}자)", response.summary().length(), charLimit);
+                    log.debug("  → 요약 내용: {}", response.summary());
+                } else {
+                    log.warn("[{}/{}] 카테고리 '{}' - 검색 결과 없음 ({}ms)", i + 1, categories.size(), category, elapsed);
+                }
+            } catch (Exception e) {
+                log.error("[{}/{}] 카테고리 '{}' 처리 실패: {}", i + 1, categories.size(), category, e.getMessage(), e);
+            }
+
+            // 다음 카테고리 처리 전 대기 (봇 탐지 회피 + 서버 부하 방지)
+            // 마지막 카테고리는 대기하지 않음
+            if (i < categories.size() - 1) {
+                try {
+                    int delaySeconds = 3;
+                    log.debug("다음 카테고리 처리 전 {}초 대기...", delaySeconds);
+                    Thread.sleep(delaySeconds * 1000L);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    log.warn("카테고리 간 대기 중 인터럽트 발생", e);
+                }
+            }
+        }
+
+        log.info("========== 크롤링 + AI 요약 완료 ==========");
+        log.info("성공: {}/{} 카테고리", summaries.size(), categories.size());
+
+        if (summaries.isEmpty()) {
+            log.warn("템플릿 {}에 대해 생성된 요약이 없습니다", template.getId());
             return;
         }
 
-        log.info("템플릿 {}에 대해 {} 개 상품 크롤링 완료", template.getId(), crawledProducts.size());
+        log.info("템플릿 {} 처리 완료 - 사용자: {}, 요약 수: {}, 글자 제한: {}",
+                template.getId(),
+                template.getUserId(),
+                summaries.size(),
+                charLimit);
 
-        // 템플릿 설정과 크롤링 결과를 합쳐서 블로그 컨텐츠 생성 요청 DTO 생성
-        BlogContentGenerationRequest generationRequest = BlogContentGenerationRequest.builder()
-                .userId(template.getUserId())
-                .templateTitle(template.getTitle())
-                .charLimit(template.getCharLimit())
-                .includeImages(template.isIncludeImages())
-                .imageCount(template.getImageCount())
-                .platforms(template.getPlatforms())
-                .crawledProducts(crawledProducts)
-                .build();
+        // 블로그 글 저장 (서비스에 위임) - 4번: 필요한 값만 전달하여 순환 의존성 해결
+        BlogSaveResult result = blogService.createBlogsFromSummaries(
+                template.getId(),
+                template.getTitle(),
+                template.getUserId(),
+                summaries
+        );
 
-        log.info("블로그 컨텐츠 생성 요청 생성 완료 - 사용자: {}, 상품 수: {}, 글자 제한: {}, 이미지 포함: {}, 이미지 개수: {}, 플랫폼: {}",
-                generationRequest.userId(),
-                generationRequest.crawledProducts().size(),
-                generationRequest.charLimit(),
-                generationRequest.includeImages(),
-                generationRequest.imageCount(),
-                generationRequest.platforms());
-
-        // TODO: AI 블로그 글 생성 및 발행 서비스 호출
-        // Example: blogContentService.generateAndPublish(generationRequest);
-        log.info("TODO: AI 블로그 글 생성 서비스 호출 예정");
+        if (!result.isAllSuccess()) {
+            log.warn("일부 블로그 저장 실패 - 성공: {}, 실패: {}", result.successCount(), result.failCount());
+        }
     }
 }
 

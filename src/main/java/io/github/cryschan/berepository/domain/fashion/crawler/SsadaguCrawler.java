@@ -31,6 +31,8 @@ public class SsadaguCrawler {
     private static final String SEARCH_URL_PATTERN = SSADAGU_BASE_URL + "/shop/search.php?ss_tx=%s";
     private static final int TIMEOUT_MS = 10000;
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+    private static final int MAX_RETRIES = 2;
+    private static final int RETRY_DELAY_MS = 2000;
 
     private final ObjectMapper objectMapper;
 
@@ -84,12 +86,60 @@ public class SsadaguCrawler {
     }
 
     /**
-     * 싸다구 검색 API를 호출하여 첫 번째 상품 URL 반환
+     * 싸다구 검색 API를 호출하여 첫 번째 상품 URL 반환 (재시도 포함)
      *
      * @param keyword 검색 키워드
      * @return 첫 번째 상품 URL (검색 결과가 없으면 null)
      */
     private String searchProductUrlViaApi(String keyword) {
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                if (attempt > 1) {
+                    log.info("Retry attempt {}/{} for keyword: {}", attempt, MAX_RETRIES, keyword);
+                    Thread.sleep(RETRY_DELAY_MS);
+                }
+                return searchProductUrlViaApiInternal(keyword);
+            } catch (org.jsoup.HttpStatusException e) {
+                int statusCode = e.getStatusCode();
+                log.warn("HTTP {} error on attempt {}/{} for keyword: {}", statusCode, attempt, MAX_RETRIES, keyword);
+
+                // 502 Bad Gateway 또는 503 Service Unavailable인 경우 재시도
+                if ((statusCode == 502 || statusCode == 503) && attempt < MAX_RETRIES) {
+                    log.info("Retrying after {}ms...", RETRY_DELAY_MS);
+                    continue;
+                }
+
+                log.error("Failed to call Ssadagu search API for keyword: {} (HTTP {})", keyword, statusCode, e);
+                return null;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error("Interrupted while waiting for retry", e);
+                return null;
+            } catch (IOException e) {
+                log.error("Failed to call Ssadagu search API for keyword: {} on attempt {}/{}", keyword, attempt, MAX_RETRIES, e);
+                if (attempt < MAX_RETRIES) {
+                    log.info("Retrying after {}ms...", RETRY_DELAY_MS);
+                    try {
+                        Thread.sleep(RETRY_DELAY_MS);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        return null;
+                    }
+                    continue;
+                }
+                return null;
+            } catch (Exception e) {
+                log.error("Unexpected error while searching Ssadagu for keyword: {}", keyword, e);
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 싸다구 검색 API 호출 실제 로직
+     */
+    private String searchProductUrlViaApiInternal(String keyword) throws IOException {
         try {
             String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
 
@@ -192,12 +242,15 @@ public class SsadaguCrawler {
 
             return productUrl;
 
+        } catch (org.jsoup.HttpStatusException e) {
+            // HttpStatusException은 상위 메서드의 재시도 로직에서 처리하도록 그대로 throw
+            throw e;
         } catch (IOException e) {
-            log.error("Failed to call Ssadagu search API for keyword: {}", keyword, e);
-            return null;
+            // 다른 IOException도 상위 메서드에서 처리하도록 throw
+            throw e;
         } catch (Exception e) {
             log.error("Unexpected error while searching Ssadagu for keyword: {}", keyword, e);
-            return null;
+            throw new IOException("Unexpected error: " + e.getMessage(), e);
         }
     }
 
