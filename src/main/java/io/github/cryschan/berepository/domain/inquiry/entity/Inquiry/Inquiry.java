@@ -1,5 +1,6 @@
 package io.github.cryschan.berepository.domain.inquiry.entity.Inquiry;
 
+import io.github.cryschan.berepository.domain.inquiry.entity.Answer.InquiryAnswer;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -9,6 +10,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Entity
@@ -47,6 +50,9 @@ public class Inquiry {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt; //문의 수정일
 
+    @OneToMany(mappedBy = "inquiry", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<InquiryAnswer> answers = new ArrayList<>();
+
     @Builder
     public Inquiry(Long id, Long userId, String title, InquiryCategory inquiryCategory, String content) {
         this.id = id;
@@ -61,6 +67,11 @@ public class Inquiry {
     //상태 변화 - 답변 완료 시 complete 메서드 호출
     public void complete(){
         this.status = InquiryStatus.COMPLETED; //답변 완료 시 상태 변화
+    }
+
+    //상태 변화 - 답변 삭제 시 reopen 메서드 호출
+    public void reopen(){
+        this.status = InquiryStatus.PENDING; //답변 삭제 시 미답변 상태로 변경
     }
 
     //문의 내용

@@ -2,7 +2,10 @@ package io.github.cryschan.berepository.domain.inquiry.repository;
 
 import io.github.cryschan.berepository.domain.inquiry.entity.Answer.InquiryAnswer;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -27,7 +30,7 @@ public interface InquiryAnswerRepository extends JpaRepository<InquiryAnswer, Lo
      * @param inquiryId 문의 ID
      * @return 답변이 있으면 Optional.of(answer), 없으면 Optional.empty()
      */
-    Optional<InquiryAnswer> findByInquiryId(Long inquiryId);
+    Optional<InquiryAnswer> findByInquiry_Id(Long inquiryId);
 
     /**
      * 특정 문의에 답변이 존재하는지 확인 (중복 답변 방지용)
@@ -41,5 +44,11 @@ public interface InquiryAnswerRepository extends JpaRepository<InquiryAnswer, Lo
      * @param inquiryId 문의 ID
      * @return 답변이 존재하면 true, 없으면 false
      */
-    boolean existsByInquiryId(Long inquiryId);
+    boolean existsByInquiry_Id(Long inquiryId);
+
+    /**
+     * 주어진 문의 목록 중 답변이 존재하는 문의 ID 목록을 반환
+     */
+    @Query("SELECT ia.inquiry.id FROM InquiryAnswer ia WHERE ia.inquiry.id IN :inquiryIds")
+    List<Long> findAnsweredInquiryIds(@Param("inquiryIds") List<Long> inquiryIds);
 }
