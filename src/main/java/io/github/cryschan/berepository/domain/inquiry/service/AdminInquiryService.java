@@ -8,7 +8,6 @@ import io.github.cryschan.berepository.domain.inquiry.entity.Inquiry.Inquiry;
 import io.github.cryschan.berepository.domain.inquiry.entity.Inquiry.InquiryStatus;
 import io.github.cryschan.berepository.domain.inquiry.exception.InquiryAlreadyAnsweredException;
 import io.github.cryschan.berepository.domain.inquiry.exception.InquiryAnswerNotFoundException;
-import io.github.cryschan.berepository.domain.inquiry.exception.InquiryNotFoundException;
 import io.github.cryschan.berepository.domain.inquiry.repository.InquiryAnswerRepository;
 import io.github.cryschan.berepository.domain.inquiry.repository.InquiryRepository;
 import io.github.cryschan.berepository.domain.user.entity.User;
@@ -132,8 +131,7 @@ public class AdminInquiryService {
         validateAdmin(adminUserId);
 
         // 문의 조회
-        Inquiry inquiry = inquiryRepository.findById(inquiryId)
-                .orElseThrow(() -> new InquiryNotFoundException(inquiryId));
+        Inquiry inquiry = inquiryRepository.getByIdOrThrow(inquiryId);
 
         // 문의 작성자의 userId로 상세 조회 (InquiryService 재사용)
         return inquiryService.getInquiryDetail(inquiry.getUserId(), inquiryId);
@@ -162,8 +160,7 @@ public class AdminInquiryService {
         validateAdmin(adminUserId);
 
         // STEP 2: 문의 조회
-        Inquiry inquiry = inquiryRepository.findById(inquiryId)
-                .orElseThrow(() -> new InquiryNotFoundException(inquiryId));
+        Inquiry inquiry = inquiryRepository.getByIdOrThrow(inquiryId);
 
         // STEP 3: 이미 답변이 있는지 확인
         if (inquiryAnswerRepository.existsByInquiry_Id(inquiryId)) {
@@ -203,8 +200,7 @@ public class AdminInquiryService {
         validateAdmin(adminUserId);
 
         // STEP 2: 문의 조회
-        Inquiry inquiry = inquiryRepository.findById(inquiryId)
-                .orElseThrow(() -> new InquiryNotFoundException(inquiryId));
+        Inquiry inquiry = inquiryRepository.getByIdOrThrow(inquiryId);
 
         // STEP 3: 답변 조회
         InquiryAnswer answer = inquiryAnswerRepository.findByInquiry_Id(inquiryId)
@@ -232,8 +228,7 @@ public class AdminInquiryService {
         validateAdmin(adminUserId);
 
         // STEP 2: 문의 조회
-        Inquiry inquiry = inquiryRepository.findById(inquiryId)
-                .orElseThrow(() -> new InquiryNotFoundException(inquiryId));
+        Inquiry inquiry = inquiryRepository.getByIdOrThrow(inquiryId);
 
         // STEP 3: 답변이 있으면 먼저 삭제 (FK 제약조건 때문에)
         inquiryAnswerRepository.findByInquiry_Id(inquiryId)
@@ -324,6 +319,7 @@ public class AdminInquiryService {
                 .inquiryCategory(inquiry.getInquiryCategory())
                 .status(inquiry.getStatus())
                 .createdAt(inquiry.getCreatedAt())
+                .updatedAt(inquiry.getUpdatedAt())
                 .hasAnswer(hasAnswer)
                 .build();
     }

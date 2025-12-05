@@ -7,8 +7,6 @@ import io.github.cryschan.berepository.domain.inquiry.dto.Response.InquiryListRe
 import io.github.cryschan.berepository.domain.inquiry.entity.Answer.InquiryAnswer;
 import io.github.cryschan.berepository.domain.inquiry.entity.Inquiry.Inquiry;
 import io.github.cryschan.berepository.domain.inquiry.exception.InvalidInquiryPageException;
-import io.github.cryschan.berepository.domain.inquiry.exception.InquiryAlreadyAnsweredException;
-import io.github.cryschan.berepository.domain.inquiry.exception.InquiryNotFoundException;
 import io.github.cryschan.berepository.domain.inquiry.exception.UnauthorizedInquiryAccessException;
 import io.github.cryschan.berepository.domain.inquiry.repository.InquiryAnswerRepository;
 import io.github.cryschan.berepository.domain.inquiry.repository.InquiryRepository;
@@ -167,16 +165,15 @@ public class InquiryService {
      */
     public InquiryDetailResponse getInquiryDetail(Long userId, Long inquiryId) {
         // STEP 1: inquiryId로 문의 조회
-         Inquiry inquiry = inquiryRepository.findById(inquiryId)
-             .orElseThrow(() -> new InquiryNotFoundException(inquiryId));
+        Inquiry inquiry = inquiryRepository.getByIdOrThrow(inquiryId);
 
         // STEP 2: 본인 문의인지 확인
-         if (!inquiry.getUserId().equals(userId)) {
-             throw new UnauthorizedInquiryAccessException();
-         }
+        if (!inquiry.getUserId().equals(userId)) {
+            throw new UnauthorizedInquiryAccessException();
+        }
 
         // STEP 3: Entity -> DTO 변환
-         return convertToDetailResponse(inquiry);
+        return convertToDetailResponse(inquiry);
     }
 
 
@@ -259,6 +256,7 @@ public class InquiryService {
                 .inquiryCategory(inquiry.getInquiryCategory())
                 .status(inquiry.getStatus())
                 .createdAt(inquiry.getCreatedAt())
+                .updatedAt(inquiry.getUpdatedAt())
                 .hasAnswer(hasAnswer)
                 .build();
     }

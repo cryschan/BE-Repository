@@ -33,5 +33,7 @@ public class InquiryListResponse {
 
     private LocalDateTime createdAt;
 
+    private LocalDateTime updatedAt;
+
     private boolean hasAnswer;
 }
