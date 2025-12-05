@@ -74,30 +74,5 @@ public class Inquiry {
         this.status = InquiryStatus.PENDING; //답변 삭제 시 미답변 상태로 변경
     }
 
-    //문의 내용
-    public void updateContent(String title, String content){
-        this.title = title;
-        this.content = content;
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 }
