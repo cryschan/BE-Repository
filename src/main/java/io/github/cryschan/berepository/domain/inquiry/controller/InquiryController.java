@@ -1,11 +1,19 @@
 package io.github.cryschan.berepository.domain.inquiry.controller;
 
 import io.github.cryschan.berepository.domain.inquiry.dto.Request.CreateInquiryRequest;
-import io.github.cryschan.berepository.domain.inquiry.dto.Request.UpdateInquiryRequest;
 import io.github.cryschan.berepository.domain.inquiry.dto.Response.InquiryDetailResponse;
 import io.github.cryschan.berepository.domain.inquiry.dto.Response.InquiryListResponse;
+import io.github.cryschan.berepository.domain.inquiry.dto.Response.InquiryPageResponse;
 import io.github.cryschan.berepository.domain.inquiry.service.InquiryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,9 +28,8 @@ import java.util.List;
  * POST   /api/inquiries          - 문의 생성
  * GET    /api/inquiries          - 내 문의 목록
  * GET    /api/inquiries/{id}     - 문의 상세
- * PUT    /api/inquiries/{id}     - 문의 수정
- * DELETE /api/inquiries/{id}     - 문의 삭제
  */
+@Tag(name = "Inquiry", description = "사용자 문의 API")
 @RestController
 @RequestMapping("/api/inquiries")
 @RequiredArgsConstructor
@@ -44,6 +51,14 @@ public class InquiryController {
      * @param request 문의 생성 요청 DTO
      * @return 생성된 문의 상세 정보
      */
+    @Operation(summary = "문의 생성", description = "새로운 문의를 생성합니다")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "문의 생성 성공",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = InquiryDetailResponse.class))),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content(mediaType = "application/json"))
+    })
     @PostMapping
     public ResponseEntity<InquiryDetailResponse> createInquiry(
             @AuthenticationPrincipal Long userId,
@@ -54,23 +69,50 @@ public class InquiryController {
     }
 
     /**
-     * 2. 내 문의 목록 조회
+     * 2. 내 문의 목록 조회 (페이징)
      *
      * 플로우:
      * 1) 사용자가 "내 문의 목록" 페이지 접속
      * 2) 현재 로그인한 사용자 ID 가져오기
      * 3) InquiryService.getMyInquiries() 호출
-     * 4) 문의 목록 반환 (200 OK)
+     * 4) 페이징된 문의 목록 반환 (200 OK)
      *
      * @param userId 현재 로그인한 사용자 ID
-     * @return 사용자의 문의 목록
+     * @param page 페이지 번호 (1부터 시작)
+     * @return 페이징된 사용자의 문의 목록
      */
+    @Operation(
+            summary = "내 문의 목록 조회",
+            description = "현재 로그인한 사용자의 문의 목록을 페이지네이션하여 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "문의 목록 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = InquiryPageResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(mediaType = "application/json")
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(mediaType = "application/json")
+            )
+    })
     @GetMapping
-    public ResponseEntity<List<InquiryListResponse>> getMyInquiries(
-            @AuthenticationPrincipal Long userId
+    public ResponseEntity<InquiryPageResponse> getMyInquiries(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "페이지 번호 (1부터 시작)", example = "1")
+            @RequestParam(defaultValue = "1") int page
     ) {
-        List<InquiryListResponse> inquiries = inquiryService.getMyInquiries(userId);
-        return ResponseEntity.ok(inquiries);
+        Page<InquiryListResponse> inquiries = inquiryService.getMyInquiries(userId, page);
+        return ResponseEntity.ok(InquiryPageResponse.from(inquiries));
     }
 
     /**
@@ -88,6 +130,15 @@ public class InquiryController {
      * @param id 조회할 문의 ID
      * @return 문의 상세 정보 (답변 포함)
      */
+    @Operation(summary = "문의 상세 조회", description = "특정 문의의 상세 정보를 조회합니다")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "문의 상세 조회 성공",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = InquiryDetailResponse.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "403", description = "권한 없음 (본인의 문의가 아님)", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "404", description = "문의를 찾을 수 없음", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content(mediaType = "application/json"))
+    })
     @GetMapping("/{id}")
     public ResponseEntity<InquiryDetailResponse> getInquiryDetail(
             @AuthenticationPrincipal Long userId,
@@ -97,53 +148,4 @@ public class InquiryController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * 4. 문의 수정
-     *
-     * 플로우:
-     * 1) 사용자가 자신의 문의 수정
-     * 2) Path Variable에서 inquiryId, Request Body에서 UpdateInquiryRequest 받기
-     * 3) 현재 로그인한 사용자 ID 가져오기
-     * 4) InquiryService.updateInquiry() 호출
-     *    - Service에서 본인 문의인지, 답변 달렸는지 확인
-     * 5) 수정된 문의 정보 반환 (200 OK)
-     *
-     * @param userId 현재 로그인한 사용자 ID
-     * @param id 수정할 문의 ID
-     * @param request 문의 수정 요청 DTO
-     * @return 수정된 문의 상세 정보
-     */
-    @PutMapping("/{id}")
-    public ResponseEntity<InquiryDetailResponse> updateInquiry(
-            @AuthenticationPrincipal Long userId,
-            @PathVariable Long id,
-            @RequestBody UpdateInquiryRequest request
-    ) {
-        InquiryDetailResponse response = inquiryService.updateInquiry(userId, id, request);
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * 5. 문의 삭제
-     *
-     * 플로우:
-     * 1) 사용자가 자신의 문의 삭제
-     * 2) Path Variable에서 inquiryId 받기
-     * 3) 현재 로그인한 사용자 ID 가져오기
-     * 4) InquiryService.deleteInquiry() 호출
-     *    - Service에서 본인 문의인지 확인
-     * 5) 204 No Content 반환
-     *
-     * @param userId 현재 로그인한 사용자 ID
-     * @param id 삭제할 문의 ID
-     * @return 204 No Content
-     */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteInquiry(
-            @AuthenticationPrincipal Long userId,
-            @PathVariable Long id
-    ) {
-        inquiryService.deleteInquiry(userId, id);
-        return ResponseEntity.noContent().build();
-    }
 }

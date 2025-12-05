@@ -23,21 +23,15 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class InquiryListResponse {
 
-    // TODO: 문의 ID (상세 페이지 이동용)
     private Long id;
 
-    // TODO: 문의 제목
     private String title;
 
-    // TODO: 문의 카테고리
     private InquiryCategory inquiryCategory;
 
-    // TODO: 문의 상태 (답변 여부 확인용)
     private InquiryStatus status;
 
-    // TODO: 문의 생성일
     private LocalDateTime createdAt;
 
-    // TODO: 답변 여부 (빠른 확인용)
     private boolean hasAnswer;
 }
