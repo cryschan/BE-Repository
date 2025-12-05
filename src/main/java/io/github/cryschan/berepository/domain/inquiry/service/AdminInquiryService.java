@@ -7,19 +7,27 @@ import io.github.cryschan.berepository.domain.inquiry.entity.Answer.InquiryAnswe
 import io.github.cryschan.berepository.domain.inquiry.entity.Inquiry.Inquiry;
 import io.github.cryschan.berepository.domain.inquiry.entity.Inquiry.InquiryStatus;
 import io.github.cryschan.berepository.domain.inquiry.exception.InquiryAlreadyAnsweredException;
+import io.github.cryschan.berepository.domain.inquiry.exception.InquiryAnswerNotFoundException;
 import io.github.cryschan.berepository.domain.inquiry.exception.InquiryNotFoundException;
 import io.github.cryschan.berepository.domain.inquiry.repository.InquiryAnswerRepository;
 import io.github.cryschan.berepository.domain.inquiry.repository.InquiryRepository;
 import io.github.cryschan.berepository.domain.user.entity.User;
 import io.github.cryschan.berepository.domain.user.entity.role.UserRole;
 import io.github.cryschan.berepository.domain.user.repository.UserRepository;
+import io.github.cryschan.berepository.domain.user.exception.UserException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -46,23 +54,32 @@ public class AdminInquiryService {
 
     /**
      * ==================================================================
-     * 1. 모든 문의 조회 (관리자용)
+     * 1. 모든 문의 조회 (관리자용) + 상태 필터링
      * ==================================================================
      *
      * 플로우:
      * STEP 1: 관리자 권한 확인
-     * STEP 2: 모든 문의 조회 (최신순)
+     * STEP 2: 상태에 따라 조회 (최신순)
+     *         - status가 null이면 전체 조회
+     *         - status가 있으면 해당 상태만 조회
      * STEP 3: Entity → DTO 변환 (사용자 정보 포함)
      */
-    public Page<AdminInquiryListResponse> getAllInquiries(Long adminUserId, Pageable pageable) {
+    public Page<AdminInquiryListResponse> getAllInquiries(Long adminUserId, InquiryStatus status, Pageable pageable) {
         // STEP 1: 관리자 권한 확인
         validateAdmin(adminUserId);
 
-        // STEP 2: 모든 문의 조회 (최신순)
-        Page<Inquiry> inquiries = inquiryRepository.findAll(pageable);
+        // STEP 2: 상태에 따라 문의 조회
+        Page<Inquiry> inquiries;
+        if (status == null) {
+            // 전체 조회
+            inquiries = inquiryRepository.findAll(pageable);
+        } else {
+            // 상태별 조회
+            inquiries = inquiryRepository.findByStatus(status, pageable);
+        }
 
         // STEP 3: Entity → DTO 변환 (사용자 정보 포함)
-        return inquiries.map(this::convertToAdminListResponse);
+        return buildAdminInquiryPage(inquiries);
     }
 
     /**
@@ -83,9 +100,7 @@ public class AdminInquiryService {
         List<Inquiry> inquiries = inquiryRepository.findByStatusOrderByCreatedAtDesc(InquiryStatus.PENDING);
 
         // STEP 3: DTO 변환
-        return inquiries.stream()
-                .map(this::convertToAdminListResponse)
-                .collect(Collectors.toList());
+        return buildAdminInquiryList(inquiries);
     }
 
     /**
@@ -102,7 +117,7 @@ public class AdminInquiryService {
         validateAdmin(adminUserId);
 
         // STEP 2: PENDING 상태 문의 개수 반환
-        return inquiryRepository.findByStatusOrderByCreatedAtDesc(InquiryStatus.PENDING).size();
+        return inquiryRepository.countByStatus(InquiryStatus.PENDING);
     }
 
     /**
@@ -151,15 +166,16 @@ public class AdminInquiryService {
                 .orElseThrow(() -> new InquiryNotFoundException(inquiryId));
 
         // STEP 3: 이미 답변이 있는지 확인
-        if (inquiryAnswerRepository.existsByInquiryId(inquiryId)) {
+        if (inquiryAnswerRepository.existsByInquiry_Id(inquiryId)) {
             throw new InquiryAlreadyAnsweredException();
         }
 
         // STEP 4: InquiryAnswer 생성
         InquiryAnswer answer = InquiryAnswer.builder()
-                .inquiryId(inquiryId)
+                .inquiry(inquiry)
                 .adminUserId(adminUserId)
                 .answerContent(request.getAnswerContent())
+                .answeredAt(LocalDateTime.now())
                 .build();
 
         // STEP 5: 저장 및 문의 상태 변경
@@ -170,37 +186,135 @@ public class AdminInquiryService {
         return inquiryService.getInquiryDetail(inquiry.getUserId(), inquiryId);
     }
 
+    /**
+     * ==================================================================
+     * 6. 관리자 답변 삭제
+     * ==================================================================
+     *
+     * 플로우:
+     * STEP 1: 관리자 권한 확인
+     * STEP 2: 문의 조회
+     * STEP 3: 답변 조회
+     * STEP 4: 답변 삭제 및 문의 상태를 PENDING으로 변경
+     */
+    @Transactional
+    public void deleteAnswer(Long adminUserId, Long inquiryId) {
+        // STEP 1: 관리자 권한 확인
+        validateAdmin(adminUserId);
+
+        // STEP 2: 문의 조회
+        Inquiry inquiry = inquiryRepository.findById(inquiryId)
+                .orElseThrow(() -> new InquiryNotFoundException(inquiryId));
+
+        // STEP 3: 답변 조회
+        InquiryAnswer answer = inquiryAnswerRepository.findByInquiry_Id(inquiryId)
+                .orElseThrow(() -> new InquiryAnswerNotFoundException(inquiryId));
+
+        // STEP 4: 답변 삭제 및 문의 상태를 PENDING으로 변경
+        inquiryAnswerRepository.delete(answer);
+        inquiry.reopen();
+    }
+
+    /**
+     * ==================================================================
+     * 7. 문의 삭제 (관리자 전용) ⭐
+     * ==================================================================
+     *
+     * 플로우:
+     * STEP 1: 관리자 권한 확인
+     * STEP 2: 문의 조회
+     * STEP 3: 답변이 있으면 먼저 삭제
+     * STEP 4: 문의 삭제
+     */
+    @Transactional
+    public void deleteInquiry(Long adminUserId, Long inquiryId) {
+        // STEP 1: 관리자 권한 확인
+        validateAdmin(adminUserId);
+
+        // STEP 2: 문의 조회
+        Inquiry inquiry = inquiryRepository.findById(inquiryId)
+                .orElseThrow(() -> new InquiryNotFoundException(inquiryId));
+
+        // STEP 3: 답변이 있으면 먼저 삭제 (FK 제약조건 때문에)
+        inquiryAnswerRepository.findByInquiry_Id(inquiryId)
+                .ifPresent(inquiryAnswerRepository::delete);
+
+        // STEP 4: 문의 삭제
+        inquiryRepository.delete(inquiry);
+    }
+
 
     /**
      * 관리자 권한 검증
      *
      * @param adminUserId 검증할 사용자 ID
      * @return 검증된 관리자 User 엔티티
-     * @throws RuntimeException 사용자가 없거나 관리자가 아닌 경우
+     * @throws UserException 사용자가 없거나 관리자가 아닌 경우
      */
     private User validateAdmin(Long adminUserId) {
         User admin = userRepository.findById(adminUserId)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> UserException.notFound(adminUserId));
 
         if (admin.getRole() != UserRole.ADMIN) {
-            throw new RuntimeException("관리자만 접근할 수 있습니다.");
+            throw UserException.accessDenied("문의 관리 기능");
         }
 
         return admin;
     }
 
-    /**
-     * Entity → DTO 변환 (사용자 정보 포함)
-     */
-    private AdminInquiryListResponse convertToAdminListResponse(Inquiry inquiry) {
-        // 사용자 정보 조회
-        User user = userRepository.findById(inquiry.getUserId())
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+    private Page<AdminInquiryListResponse> buildAdminInquiryPage(Page<Inquiry> inquiries) {
+        List<AdminInquiryListResponse> content = buildAdminInquiryList(inquiries.getContent());
+        return new PageImpl<>(content, inquiries.getPageable(), inquiries.getTotalElements());
+    }
 
-        // 답변 존재 여부 확인
-        boolean hasAnswer = inquiryAnswerRepository.existsByInquiryId(inquiry.getId());
+    private List<AdminInquiryListResponse> buildAdminInquiryList(List<Inquiry> inquiries) {
+        if (inquiries.isEmpty()) {
+            return Collections.emptyList();
+        }
 
-        // AdminInquiryListResponse 생성
+        Map<Long, User> userMap = getUserMap(inquiries);
+        Set<Long> answeredInquiryIds = getAnsweredInquiryIds(inquiries);
+
+        return inquiries.stream()
+                .map(inquiry -> convertToAdminListResponse(
+                        inquiry,
+                        userMap.get(inquiry.getUserId()),
+                        answeredInquiryIds.contains(inquiry.getId())
+                ))
+                .collect(Collectors.toList());
+    }
+
+    private Map<Long, User> getUserMap(List<Inquiry> inquiries) {
+        List<Long> userIds = inquiries.stream()
+                .map(Inquiry::getUserId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (userIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        return userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getUserId, user -> user));
+    }
+
+    private Set<Long> getAnsweredInquiryIds(List<Inquiry> inquiries) {
+        List<Long> inquiryIds = inquiries.stream()
+                .map(Inquiry::getId)
+                .collect(Collectors.toList());
+
+        if (inquiryIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        return new HashSet<>(inquiryAnswerRepository.findAnsweredInquiryIds(inquiryIds));
+    }
+
+    private AdminInquiryListResponse convertToAdminListResponse(Inquiry inquiry, User user, boolean hasAnswer) {
+        if (user == null) {
+            throw UserException.notFound(inquiry.getUserId());
+        }
+
         return AdminInquiryListResponse.builder()
                 .id(inquiry.getId())
                 .userId(inquiry.getUserId())

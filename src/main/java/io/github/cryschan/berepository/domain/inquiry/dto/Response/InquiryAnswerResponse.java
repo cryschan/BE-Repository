@@ -18,15 +18,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class InquiryAnswerResponse {
 
-    // TODO: 답변 ID
     private Long id;
 
-    // TODO: 답변 작성자 (관리자) ID
     private Long adminUserId;
 
-    // TODO: 답변 내용
     private String answerContent;
 
-    // TODO: 답변 작성일
-    private LocalDateTime createdAt;
+    private LocalDateTime answeredAt;
 }

@@ -1,5 +1,6 @@
 package io.github.cryschan.berepository.domain.inquiry.entity.Answer;
 
+import io.github.cryschan.berepository.domain.inquiry.entity.Inquiry.Inquiry;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -27,8 +28,9 @@ public class InquiryAnswer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "inquiry_id", nullable = false, unique = true)
-    private Long inquiryId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "inquiry_id", nullable = false, unique = true)
+    private Inquiry inquiry;
 
     /**
      * 답변 작성자 (관리자) ID
@@ -43,11 +45,12 @@ public class InquiryAnswer {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String answerContent;
 
+    @Column(name = "answered_at", nullable = false, updatable = false)
     private LocalDateTime answeredAt;
 
     @Builder
-    public InquiryAnswer(Long inquiryId, Long adminUserId, String answerContent, LocalDateTime answeredAt) {
-        this.inquiryId = inquiryId;
+    public InquiryAnswer(Inquiry inquiry, Long adminUserId, String answerContent, LocalDateTime answeredAt) {
+        this.inquiry = inquiry;
         this.adminUserId = adminUserId;
         this.answerContent = answerContent;
         this.answeredAt = answeredAt;
