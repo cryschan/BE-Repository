@@ -56,6 +56,13 @@ public enum ErrorCode {
     NO_PRODUCT_FOUND("FS003", "상품을 찾을 수 없습니다", HttpStatus.NOT_FOUND),
     INVALID_CATEGORY("FS004", "유효하지 않은 카테고리입니다", HttpStatus.BAD_REQUEST),
 
+    // ==================== Inquiry 도메인 (I로 시작) ====================
+    INQUIRY_NOT_FOUND("I001", "문의를 찾을 수 없습니다", HttpStatus.NOT_FOUND),
+    INQUIRY_ACCESS_DENIED("I002", "문의에 대한 권한이 없습니다", HttpStatus.FORBIDDEN),
+    INQUIRY_ALREADY_ANSWERED("I003", "이미 답변이 등록된 문의입니다", HttpStatus.BAD_REQUEST),
+    INQUIRY_ANSWER_NOT_FOUND("I004", "문의에 대한 답변을 찾을 수 없습니다", HttpStatus.NOT_FOUND),
+    INQUIRY_INVALID_PAGE("I005", "문의 페이지 번호는 1 이상이어야 합니다", HttpStatus.BAD_REQUEST),
+
     // ==================== 공통 (C로 시작) ====================
     INVALID_INPUT("C001", "입력값이 올바르지 않습니다", HttpStatus.BAD_REQUEST),
     INVALID_REQUEST("C002", "잘못된 요청입니다", HttpStatus.BAD_REQUEST),
