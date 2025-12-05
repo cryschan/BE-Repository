@@ -11,10 +11,6 @@ import io.github.cryschan.berepository._global.exception.base.ErrorCode;
  * - 삭제된 문의 접근 시도
  */
 public class InquiryNotFoundException extends DomainException {
-    public InquiryNotFoundException() {
-        super(ErrorCode.INQUIRY_NOT_FOUND);
-    }
-
     public InquiryNotFoundException(Long inquiryId) {
         super(ErrorCode.INQUIRY_NOT_FOUND, "문의를 찾을 수 없습니다. ID: " + inquiryId);
     }

@@ -26,5 +26,6 @@ public class AdminInquiryListResponse {
     private InquiryCategory inquiryCategory;
     private InquiryStatus status;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private boolean hasAnswer;
 }

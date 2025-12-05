@@ -13,7 +13,4 @@ public class InquiryAnswerNotFoundException extends DomainException {
                 String.format("문의(ID: %d)에 대한 답변을 찾을 수 없습니다.", inquiryId));
     }
 
-    public InquiryAnswerNotFoundException() {
-        super(ErrorCode.INQUIRY_ANSWER_NOT_FOUND);
-    }
 }

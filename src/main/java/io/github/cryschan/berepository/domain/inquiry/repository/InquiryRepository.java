@@ -2,6 +2,7 @@ package io.github.cryschan.berepository.domain.inquiry.repository;
 
 import io.github.cryschan.berepository.domain.inquiry.entity.Inquiry.Inquiry;
 import io.github.cryschan.berepository.domain.inquiry.entity.Inquiry.InquiryStatus;
+import io.github.cryschan.berepository.domain.inquiry.exception.InquiryNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -53,4 +54,12 @@ public interface InquiryRepository extends JpaRepository<Inquiry, Long> {
      * 상태별 문의 건수를 반환
      */
     long countByStatus(InquiryStatus status);
+
+    /**
+     * 조회 편의 메서드: 존재하지 않으면 InquiryNotFoundException 발생
+     */
+    default Inquiry getByIdOrThrow(Long inquiryId) {
+        return findById(inquiryId)
+                .orElseThrow(() -> new InquiryNotFoundException(inquiryId));
+    }
 }
