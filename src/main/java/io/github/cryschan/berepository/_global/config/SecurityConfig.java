@@ -1,5 +1,6 @@
 package io.github.cryschan.berepository._global.config;
 
+import io.github.cryschan.berepository._global.jwt.JwtAuthenticationEntryPoint;
 import io.github.cryschan.berepository._global.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -23,6 +24,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     /**
      * Swagger UI 접근 경로
@@ -53,6 +55,9 @@ public class SecurityConfig {
                 // 세션 사용 안함 (JWT 사용 예정)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint))
 
                 // JWT 인증 필터 추가 (UsernamePasswordAuthenticationFilter 이전에 실행)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

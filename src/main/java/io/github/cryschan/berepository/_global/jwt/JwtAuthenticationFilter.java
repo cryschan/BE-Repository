@@ -1,10 +1,13 @@
 package io.github.cryschan.berepository._global.jwt;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -24,6 +27,7 @@ import java.util.ArrayList;
  * @author tato126
  * @since 1.0
  */
+@Slf4j
 @RequiredArgsConstructor
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -59,20 +63,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             String token = authHeader.substring(7); // "Bearer " 제거 (7자)
 
-            // 2. 토큰 검증
-            if (jwtUtil.validateToken(token)) {
-                // 3. userId 추출
-                Long userId = jwtUtil.getUserId(token);
+            try {
+                // 2. 토큰 검증
+                if (jwtUtil.validateToken(token)) {
+                    // 3. userId 추출
+                    Long userId = jwtUtil.getUserId(token);
 
-                // 4. Spring Security 인증 객체 생성
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userId,
-                        null,
-                        new ArrayList<>()
-                );
+                    // 4. Spring Security 인증 객체 생성
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userId, null, new ArrayList<>());
 
-                // 5. SecurityContext에 저장
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    // 5. SecurityContext에 저장
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                } else {
+                    request.setAttribute("exception", "INVALID_TOKEN");
+                }
+            } catch (ExpiredJwtException e) {
+                request.setAttribute("exception", "EXPIRED_TOKEN");
+            } catch (JwtException e) {
+                request.setAttribute("exception", "INVALID_TOKEN");
+            } catch (Exception e) {
+                request.setAttribute("exception", "UNKNOWN_ERROR");
             }
         }
 
