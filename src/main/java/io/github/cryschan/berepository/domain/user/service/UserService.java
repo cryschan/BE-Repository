@@ -100,7 +100,13 @@ public class UserService {
         String token = request.refreshToken();
 
         // 토큰 유효성 및 refresh token 여부 검증
-        if (!jwtUtil.validateToken(token) || !jwtUtil.isRefreshToken(token)) {
+        try {
+            jwtUtil.validateToken(token); // 만료 or invalid 시 예외 발생
+        } catch (Exception e) {
+            throw TokenException.invalid();
+        }
+
+        if (!jwtUtil.isRefreshToken(token)) {
             throw TokenException.invalid();
         }
 
