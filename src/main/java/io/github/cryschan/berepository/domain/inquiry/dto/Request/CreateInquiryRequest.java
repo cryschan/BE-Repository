@@ -18,12 +18,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreateInquiryRequest {
 
-    // TODO: 문의 제목 (필수, 최대 200자)
     private String title;
 
-    // TODO: 문의 카테고리 (필수) - FEATURE, PAYMENT, ACCOUNT, ETC
     private InquiryCategory inquiryCategory;
 
-    // TODO: 문의 내용 (필수)
     private String content;
 }
