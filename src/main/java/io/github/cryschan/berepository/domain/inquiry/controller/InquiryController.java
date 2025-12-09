@@ -15,6 +15,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -128,7 +130,19 @@ public class InquiryController {
      */
     @Operation(
             summary = "내 문의 목록 조회",
-            description = "현재 로그인한 사용자의 문의 목록을 페이지네이션하여 조회합니다."
+            description = """
+                    현재 로그인한 사용자의 문의 목록을 페이지네이션하여 조회합니다.
+
+                    **기능:**
+                    - 페이징 지원 (page, size 파라미터)
+                    - 상태별 필터링 (status 파라미터)
+                    - 최신순 정렬
+
+                    **Query Parameters:**
+                    - `page`: 페이지 번호 (1부터 시작, 기본값: 1)
+                    - `size`: 페이지 크기 (1~100, 기본값: 10)
+                    - `status`: null(전체) / PENDING (미답변) / IN_PROGRESS (답변중) / COMPLETED (답변완료)
+                    """
     )
     @ApiResponses({
             @ApiResponse(
@@ -201,12 +215,14 @@ public class InquiryController {
     public ResponseEntity<InquiryPageResponse> getMyInquiries(
             @AuthenticationPrincipal Long userId,
             @Parameter(description = "페이지 번호 (1부터 시작)", example = "1")
-            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @Parameter(description = "페이지 크기 (1~100)", example = "10")
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
             @Parameter(description = "문의 상태 필터", example = "PENDING")
             @RequestParam(required = false) InquiryStatus status
     ) {
         // status가 null이면 전체, 값이 있으면 해당 상태만 조회
-        Page<InquiryListResponse> inquiries = inquiryService.getMyInquiries(userId, page, status);
+        Page<InquiryListResponse> inquiries = inquiryService.getMyInquiries(userId, page, size, status);
         return ResponseEntity.ok(InquiryPageResponse.from(inquiries));
     }
 

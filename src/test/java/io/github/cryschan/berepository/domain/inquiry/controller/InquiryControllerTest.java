@@ -102,7 +102,7 @@ class InquiryControllerTest {
                 .build();
         Page<InquiryListResponse> page = new PageImpl<>(List.of(listResponse), PageRequest.of(0, 10), 1);
 
-        given(inquiryService.getMyInquiries(eq(1L), eq(1), isNull())).willReturn(page);
+        given(inquiryService.getMyInquiries(eq(1L), eq(1), eq(10), isNull())).willReturn(page);
 
         // when & then
         mockMvc.perform(get("/api/inquiries")
@@ -113,7 +113,7 @@ class InquiryControllerTest {
                 .andExpect(jsonPath("$.currentPage").value(1))
                 .andExpect(jsonPath("$.totalElements").value(1));
 
-        verify(inquiryService).getMyInquiries(eq(1L), eq(1), isNull());
+        verify(inquiryService).getMyInquiries(eq(1L), eq(1), eq(10), isNull());
     }
 
     @Test
@@ -131,7 +131,7 @@ class InquiryControllerTest {
                 .build();
         Page<InquiryListResponse> page = new PageImpl<>(List.of(listResponse), PageRequest.of(0, 10), 1);
 
-        given(inquiryService.getMyInquiries(1L, 1, InquiryStatus.COMPLETED)).willReturn(page);
+        given(inquiryService.getMyInquiries(1L, 1, 10, InquiryStatus.COMPLETED)).willReturn(page);
 
         // when & then
         mockMvc.perform(get("/api/inquiries")
@@ -141,7 +141,7 @@ class InquiryControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.inquiries[0].status").value("COMPLETED"));
 
-        verify(inquiryService).getMyInquiries(1L, 1, InquiryStatus.COMPLETED);
+        verify(inquiryService).getMyInquiries(1L, 1, 10, InquiryStatus.COMPLETED);
     }
 
     @Test

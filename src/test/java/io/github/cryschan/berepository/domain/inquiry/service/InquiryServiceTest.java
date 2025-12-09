@@ -95,7 +95,7 @@ class InquiryServiceTest {
     @Test
     @DisplayName("실패: 페이지 번호가 1 미만이면 InvalidInquiryPageException")
     void getMyInquiries_InvalidPage() {
-        assertThatThrownBy(() -> inquiryService.getMyInquiries(1L, 0, null))
+        assertThatThrownBy(() -> inquiryService.getMyInquiries(1L, 0, 10, null))
                 .isInstanceOf(InvalidInquiryPageException.class);
     }
 
@@ -109,7 +109,7 @@ class InquiryServiceTest {
         given(inquiryAnswerRepository.findAnsweredInquiryIds(anyList())).willReturn(List.of(inquiry.getId()));
 
         // when
-        Page<InquiryListResponse> result = inquiryService.getMyInquiries(1L, 1, null);
+        Page<InquiryListResponse> result = inquiryService.getMyInquiries(1L, 1, 10, null);
 
         // then
         assertThat(result.getContent()).hasSize(1);
@@ -129,7 +129,7 @@ class InquiryServiceTest {
         given(inquiryAnswerRepository.findAnsweredInquiryIds(anyList())).willReturn(List.of());
 
         // when
-        Page<InquiryListResponse> result = inquiryService.getMyInquiries(1L, 1, InquiryStatus.COMPLETED);
+        Page<InquiryListResponse> result = inquiryService.getMyInquiries(1L, 1, 10, InquiryStatus.COMPLETED);
 
         // then
         assertThat(result.getContent()).hasSize(1);

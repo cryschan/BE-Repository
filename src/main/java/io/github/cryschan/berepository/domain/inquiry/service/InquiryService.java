@@ -111,18 +111,27 @@ public class InquiryService {
      *
      * @param userId 사용자 ID
      * @param page 페이지 번호 (1부터 시작)
+     * @param size 페이지 크기
      * @param status 상태 필터 (null이면 전체)
      * @return 페이징된 문의 목록
      */
-    public Page<InquiryListResponse> getMyInquiries(Long userId, int page, InquiryStatus status) {
+    public Page<InquiryListResponse> getMyInquiries(Long userId, int page, int size, InquiryStatus status) {
         if (page < 1) {
             throw new InvalidInquiryPageException(page);
+        }
+
+        // 페이지 크기 검증 (1~100)
+        if (size < 1) {
+            size = 10;
+        }
+        if (size > 100) {
+            size = 100;
         }
 
         // STEP 1: Pageable 생성 (page-1: 1-based → 0-based)
         Pageable pageable = org.springframework.data.domain.PageRequest.of(
                 page - 1,  // 0-based 인덱스로 변환
-                10,        // 페이지당 10개
+                size,      // 페이지당 항목 수
                 org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt")
         );
 
