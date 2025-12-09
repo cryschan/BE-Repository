@@ -95,7 +95,7 @@ class InquiryServiceTest {
     @Test
     @DisplayName("실패: 페이지 번호가 1 미만이면 InvalidInquiryPageException")
     void getMyInquiries_InvalidPage() {
-        assertThatThrownBy(() -> inquiryService.getMyInquiries(1L, 0))
+        assertThatThrownBy(() -> inquiryService.getMyInquiries(1L, 0, null))
                 .isInstanceOf(InvalidInquiryPageException.class);
     }
 
@@ -109,7 +109,7 @@ class InquiryServiceTest {
         given(inquiryAnswerRepository.findAnsweredInquiryIds(anyList())).willReturn(List.of(inquiry.getId()));
 
         // when
-        Page<InquiryListResponse> result = inquiryService.getMyInquiries(1L, 1);
+        Page<InquiryListResponse> result = inquiryService.getMyInquiries(1L, 1, null);
 
         // then
         assertThat(result.getContent()).hasSize(1);
@@ -117,6 +117,23 @@ class InquiryServiceTest {
         assertThat(listResponse.getId()).isEqualTo(inquiry.getId());
         assertThat(listResponse.isHasAnswer()).isTrue();
         verify(inquiryRepository).findByUserIdOrderByCreatedAtDesc(1L, pageRequest);
+    }
+
+    @Test
+    @DisplayName("성공: 상태로 필터링하여 내 문의 목록을 조회한다")
+    void getMyInquiries_FilterByStatus() {
+        // given
+        PageRequest pageRequest = PageRequest.of(0, 10);
+        Page<Inquiry> inquiryPage = new PageImpl<>(List.of(inquiry), pageRequest, 1);
+        given(inquiryRepository.findByUserIdAndStatusOrderByCreatedAtDesc(1L, InquiryStatus.COMPLETED, pageRequest)).willReturn(inquiryPage);
+        given(inquiryAnswerRepository.findAnsweredInquiryIds(anyList())).willReturn(List.of());
+
+        // when
+        Page<InquiryListResponse> result = inquiryService.getMyInquiries(1L, 1, InquiryStatus.COMPLETED);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        verify(inquiryRepository).findByUserIdAndStatusOrderByCreatedAtDesc(1L, InquiryStatus.COMPLETED, pageRequest);
     }
 
     @Test
