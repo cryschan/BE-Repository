@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
@@ -99,18 +100,18 @@ class AdminInquiryServiceTest {
         mockAdminValidation(100L);
         PageRequest pageable = PageRequest.of(0, 10);
         Page<Inquiry> inquiryPage = new PageImpl<>(List.of(inquiry), pageable, 1);
-        given(inquiryRepository.findByStatus(InquiryStatus.PENDING, pageable)).willReturn(inquiryPage);
+        given(inquiryRepository.findByStatus(eq(InquiryStatus.PENDING), any(Pageable.class))).willReturn(inquiryPage);
         given(userRepository.findAllById(anyCollection())).willReturn(List.of(inquiryOwner));
         given(inquiryAnswerRepository.findAnsweredInquiryIds(anyList())).willReturn(List.of());
 
         // when
-        Page<AdminInquiryListResponse> result = adminInquiryService.getAllInquiries(100L, InquiryStatus.PENDING, pageable);
+        Page<AdminInquiryListResponse> result = adminInquiryService.getAllInquiries(100L, InquiryStatus.PENDING, 1, 10);
 
         // then
         assertThat(result.getContent()).hasSize(1);
         AdminInquiryListResponse response = result.getContent().get(0);
         assertThat(response.getUserEmail()).isEqualTo("user@test.com");
-        verify(inquiryRepository).findByStatus(InquiryStatus.PENDING, pageable);
+        verify(inquiryRepository).findByStatus(eq(InquiryStatus.PENDING), any(Pageable.class));
     }
 
     @Test
@@ -157,7 +158,7 @@ class AdminInquiryServiceTest {
         given(userRepository.findById(200L)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> adminInquiryService.getAllInquiries(200L, null, PageRequest.of(0, 10)))
+        assertThatThrownBy(() -> adminInquiryService.getAllInquiries(200L, null, 1, 10))
                 .isInstanceOf(UserException.class);
     }
 
