@@ -40,6 +40,13 @@ public interface InquiryRepository extends JpaRepository<Inquiry, Long> {
     List<Inquiry> findByStatusOrderByCreatedAtDesc(InquiryStatus status);
 
     /**
+     * 특정 사용자의 문의를 상태로 필터링하여 최신순으로 조회 (페이징)
+     *
+     * 프론트에서 상태별 탭(PENDING/IN_PROGRESS/COMPLETED)을 요청할 때 사용
+     */
+    Page<Inquiry> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, InquiryStatus status, Pageable pageable);
+
+    /**
      * 상태별 문의 조회 (페이징)
      *
      * 생성되는 쿼리:

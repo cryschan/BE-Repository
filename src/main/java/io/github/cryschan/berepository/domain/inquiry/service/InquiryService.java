@@ -6,6 +6,7 @@ import io.github.cryschan.berepository.domain.inquiry.dto.Response.InquiryDetail
 import io.github.cryschan.berepository.domain.inquiry.dto.Response.InquiryListResponse;
 import io.github.cryschan.berepository.domain.inquiry.entity.Answer.InquiryAnswer;
 import io.github.cryschan.berepository.domain.inquiry.entity.Inquiry.Inquiry;
+import io.github.cryschan.berepository.domain.inquiry.entity.Inquiry.InquiryStatus;
 import io.github.cryschan.berepository.domain.inquiry.exception.InvalidInquiryPageException;
 import io.github.cryschan.berepository.domain.inquiry.exception.UnauthorizedInquiryAccessException;
 import io.github.cryschan.berepository.domain.inquiry.repository.InquiryAnswerRepository;
@@ -110,9 +111,10 @@ public class InquiryService {
      *
      * @param userId 사용자 ID
      * @param page 페이지 번호 (1부터 시작)
+     * @param status 상태 필터 (null이면 전체)
      * @return 페이징된 문의 목록
      */
-    public Page<InquiryListResponse> getMyInquiries(Long userId, int page) {
+    public Page<InquiryListResponse> getMyInquiries(Long userId, int page, InquiryStatus status) {
         if (page < 1) {
             throw new InvalidInquiryPageException(page);
         }
@@ -125,7 +127,13 @@ public class InquiryService {
         );
 
         // STEP 2: Repository에서 userId로 문의 목록 조회 (페이징)
-        Page<Inquiry> inquiries = inquiryRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+        Page<Inquiry> inquiries;
+        if (status == null) {
+            inquiries = inquiryRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+        } else {
+            // 상태 필터가 있으면 해당 상태만 조회 (프론트 필터링 대응)
+            inquiries = inquiryRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, status, pageable);
+        }
 
         List<Inquiry> inquiryContent = inquiries.getContent();
         Set<Long> answeredInquiryIds = getAnsweredInquiryIds(inquiryContent);
