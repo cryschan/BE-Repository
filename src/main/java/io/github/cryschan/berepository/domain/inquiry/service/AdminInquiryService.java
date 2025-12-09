@@ -17,7 +17,9 @@ import io.github.cryschan.berepository.domain.user.exception.UserException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +38,7 @@ import java.util.stream.Collectors;
  * 💡 관리자 전용 기능
  * ==================================================================
  * 1. 모든 문의 조회
- * 2. 미답변 문의 건수 조회
+ * 2. 미답변 문의 목록 조회
  * 3. 답변 작성
  *
  * ⚠️ 모든 메서드는 관리자 권한 확인 필요!
@@ -63,9 +65,32 @@ public class AdminInquiryService {
      *         - status가 있으면 해당 상태만 조회
      * STEP 3: Entity → DTO 변환 (사용자 정보 포함)
      */
-    public Page<AdminInquiryListResponse> getAllInquiries(Long adminUserId, InquiryStatus status, Pageable pageable) {
+    public Page<AdminInquiryListResponse> getAllInquiries(Long adminUserId, InquiryStatus status, int page, int size) {
         // STEP 1: 관리자 권한 확인
         validateAdmin(adminUserId);
+
+        // 페이지 번호 검증
+        if (page < 1) {
+            page = 1;
+        }
+
+        // 페이지 크기 제한
+        if (size > 100) {
+            size = 100;
+        }
+        if (size < 1) {
+            size = 10;
+        }
+
+        // 1-based → 0-based 변환
+        int pageIndex = page - 1;
+
+        // Pageable 생성 (최신순 정렬)
+        Pageable pageable = PageRequest.of(
+                pageIndex,
+                size,
+                Sort.by(Sort.Order.desc("createdAt"))
+        );
 
         // STEP 2: 상태에 따라 문의 조회
         Page<Inquiry> inquiries;
@@ -104,24 +129,7 @@ public class AdminInquiryService {
 
     /**
      * ==================================================================
-     * 3. 미답변 문의 건수 조회 ⭐ 이미지의 "미답변 문의가 3건이 표시됩니다"
-     * ==================================================================
-     *
-     * 플로우:
-     * STEP 1: 관리자 권한 확인
-     * STEP 2: PENDING 상태 문의 개수 반환
-     */
-    public long getPendingInquiriesCount(Long adminUserId) {
-        // STEP 1: 관리자 권한 확인
-        validateAdmin(adminUserId);
-
-        // STEP 2: PENDING 상태 문의 개수 반환
-        return inquiryRepository.countByStatus(InquiryStatus.PENDING);
-    }
-
-    /**
-     * ==================================================================
-     * 4. 관리자용 문의 상세 조회
+     * 3. 관리자용 문의 상세 조회
      * ==================================================================
      *
      * 관리자는 모든 문의를 볼 수 있으므로 권한만 확인
@@ -139,7 +147,7 @@ public class AdminInquiryService {
 
     /**
      * ==================================================================
-     * 5. 관리자 답변 작성 ⭐⭐⭐ 이미지의 "답변 등록" 버튼
+     * 4. 관리자 답변 작성 ⭐⭐⭐ 이미지의 "답변 등록" 버튼
      * ==================================================================
      *
      * 플로우:
@@ -185,7 +193,7 @@ public class AdminInquiryService {
 
     /**
      * ==================================================================
-     * 6. 관리자 답변 삭제
+     * 5. 관리자 답변 삭제
      * ==================================================================
      *
      * 플로우:
@@ -213,7 +221,7 @@ public class AdminInquiryService {
 
     /**
      * ==================================================================
-     * 7. 문의 삭제 (관리자 전용) ⭐
+     * 6. 문의 삭제 (관리자 전용) ⭐
      * ==================================================================
      *
      * 플로우:

@@ -73,18 +73,19 @@ class AdminInquiryControllerTest {
                 .build();
         Page<AdminInquiryListResponse> page = new PageImpl<>(List.of(response), PageRequest.of(0, 10), 1);
 
-        given(adminInquiryService.getAllInquiries(eq(100L), eq(InquiryStatus.PENDING), any(PageRequest.class)))
+        given(adminInquiryService.getAllInquiries(eq(100L), eq(InquiryStatus.PENDING), eq(1), eq(10)))
                 .willReturn(page);
 
         mockMvc.perform(get("/api/admin/inquiries")
                         .with(authentication(new TestingAuthenticationToken(100L, null)))
                         .param("status", InquiryStatus.PENDING.name())
-                        .param("page", "0")
+                        .param("page", "1")
                         .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].title").value("문의 제목"));
+                .andExpect(jsonPath("$.inquiries[0].title").value("문의 제목"))
+                .andExpect(jsonPath("$.currentPage").value(1));
 
-        verify(adminInquiryService).getAllInquiries(eq(100L), eq(InquiryStatus.PENDING), any(PageRequest.class));
+        verify(adminInquiryService).getAllInquiries(eq(100L), eq(InquiryStatus.PENDING), eq(1), eq(10));
     }
 
     @Test
@@ -111,19 +112,6 @@ class AdminInquiryControllerTest {
                 .andExpect(jsonPath("$[0].title").value("미답변 문의"));
 
         verify(adminInquiryService).getPendingInquiries(100L);
-    }
-
-    @Test
-    @DisplayName("200 성공: 미답변 문의 건수 조회")
-    void getPendingCount_Success() throws Exception {
-        given(adminInquiryService.getPendingInquiriesCount(100L)).willReturn(3L);
-
-        mockMvc.perform(get("/api/admin/inquiries/pending/count")
-                        .with(authentication(new TestingAuthenticationToken(100L, null))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.count").value(3));
-
-        verify(adminInquiryService).getPendingInquiriesCount(100L);
     }
 
     @Test

@@ -29,6 +29,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -101,7 +102,7 @@ class InquiryControllerTest {
                 .build();
         Page<InquiryListResponse> page = new PageImpl<>(List.of(listResponse), PageRequest.of(0, 10), 1);
 
-        given(inquiryService.getMyInquiries(1L, 1)).willReturn(page);
+        given(inquiryService.getMyInquiries(eq(1L), eq(1), isNull())).willReturn(page);
 
         // when & then
         mockMvc.perform(get("/api/inquiries")
@@ -112,7 +113,35 @@ class InquiryControllerTest {
                 .andExpect(jsonPath("$.currentPage").value(1))
                 .andExpect(jsonPath("$.totalElements").value(1));
 
-        verify(inquiryService).getMyInquiries(1L, 1);
+        verify(inquiryService).getMyInquiries(eq(1L), eq(1), isNull());
+    }
+
+    @Test
+    @DisplayName("200 성공: 상태별 문의 목록을 조회한다")
+    void getMyInquiries_FilterByStatus() throws Exception {
+        // given
+        InquiryListResponse listResponse = InquiryListResponse.builder()
+                .id(20L)
+                .title("완료된 문의")
+                .inquiryCategory(InquiryCategory.FEATURE)
+                .status(InquiryStatus.COMPLETED)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .hasAnswer(true)
+                .build();
+        Page<InquiryListResponse> page = new PageImpl<>(List.of(listResponse), PageRequest.of(0, 10), 1);
+
+        given(inquiryService.getMyInquiries(1L, 1, InquiryStatus.COMPLETED)).willReturn(page);
+
+        // when & then
+        mockMvc.perform(get("/api/inquiries")
+                        .with(authentication(new TestingAuthenticationToken(1L, null)))
+                        .param("page", "1")
+                        .param("status", "COMPLETED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.inquiries[0].status").value("COMPLETED"));
+
+        verify(inquiryService).getMyInquiries(1L, 1, InquiryStatus.COMPLETED);
     }
 
     @Test
