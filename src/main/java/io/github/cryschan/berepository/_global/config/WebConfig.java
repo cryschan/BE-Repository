@@ -14,12 +14,10 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                // Vercel 배포 URL 허용 (배포 후 실제 URL로 변경 필요)
-                .allowedOrigins(
-                        "http://localhost:3000",           // 로컬 개발
-                        "http://localhost:5173",           // Vite 로컬 개발
-                        "https://*.vercel.app",            // Vercel 프리뷰/프로덕션
-                        "https://your-domain.com"          // 커스텀 도메인 (있으면)
+                .allowedOriginPatterns(
+                        "http://localhost:3000",
+                        "http://localhost:5173",
+                        "https://*.vercel.app"
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                 .allowedHeaders("*")
