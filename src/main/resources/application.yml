@@ -31,6 +31,9 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,https://fe-repository-seven.vercel.app}
+
 # Swagger 간단 설정
 springdoc:
   swagger-ui:
