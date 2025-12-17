@@ -332,8 +332,8 @@ public class DashboardService {
         Optional<Dashboard> yesterdayDashboard = dashboardRepository.findByDate(yesterday);
         
         if (yesterdayDashboard.isEmpty()) {
-            // 어제 데이터가 없으면 모든 증감률과 변화량을 null로 반환
-            return new DashboardComparison(null, null, null, null, null, null);
+            // 어제 데이터가 없으면 모든 증감률과 변화량을 0으로 반환
+            return new DashboardComparison(0.0, 0, 0.0, 0, 0.0, 0L);
         }
         
         Dashboard yesterdayData = yesterdayDashboard.get();
@@ -389,7 +389,7 @@ public class DashboardService {
      */
     private Integer calculateChange(Integer todayValue, Integer yesterdayValue) {
         if (yesterdayValue == null) {
-            return null;
+            return 0;
         }
         int today = todayValue != null ? todayValue : 0;
         return today - yesterdayValue;
@@ -404,7 +404,7 @@ public class DashboardService {
      */
     private Long calculateChange(Long todayValue, Long yesterdayValue) {
         if (yesterdayValue == null) {
-            return null;
+            return 0L;
         }
         long today = todayValue != null ? todayValue : 0L;
         return today - yesterdayValue;
@@ -419,7 +419,7 @@ public class DashboardService {
      */
     private Double calculateChangeRate(Integer todayValue, Integer yesterdayValue) {
         if (yesterdayValue == null || yesterdayValue == 0) {
-            return null;
+            return 0.0;
         }
         // todayValue가 null이면 0으로 처리
         int today = todayValue != null ? todayValue : 0;
@@ -437,7 +437,7 @@ public class DashboardService {
      */
     private Double calculateChangeRate(Long todayValue, Long yesterdayValue) {
         if (yesterdayValue == null || yesterdayValue == 0) {
-            return null;
+            return 0.0;
         }
         // todayValue가 null이면 0으로 처리
         long today = todayValue != null ? todayValue : 0L;
