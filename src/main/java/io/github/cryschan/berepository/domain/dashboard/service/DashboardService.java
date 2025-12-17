@@ -132,11 +132,14 @@ public class DashboardService {
             BlogTemplate template = getTemplateFromBlog(blog, templateMap);
             Long blogId = blog.getId();
 
-            // Blog의 category를 직접 사용하여 카테고리 분포 계산
-            String category = blog.getCategory();
-            if (category != null && !category.isEmpty()) {
-                categoryToBlogIds.computeIfAbsent(category, k -> new java.util.HashSet<>())
-                        .add(blogId);
+            // BlogTemplate의 categories를 사용하여 카테고리 분포 계산
+            if (template != null && template.getCategories() != null) {
+                for (String category : template.getCategories()) {
+                    if (category != null && !category.isEmpty()) {
+                        categoryToBlogIds.computeIfAbsent(category, k -> new java.util.HashSet<>())
+                                .add(blogId);
+                    }
+                }
             }
 
             // 템플릿이 있을 때만 플랫폼 분포 계산
